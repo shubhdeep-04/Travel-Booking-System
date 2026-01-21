@@ -143,7 +143,7 @@ Visit `http://localhost:8000` to see the application.
 travel_booking_system/
 ├── manage.py
 ├── requirements.txt
-├── .env.example
+├── .venv
 ├── travel_booking_system/
 │   ├── settings.py          # Project settings
 │   ├── urls.py              # Main URL routing
@@ -244,15 +244,6 @@ docker-compose up -d
 
 ---
 
-## 👥 Contributors  
-
-| Name | Role | Contact |
-|------|------|---------|
-| **Your Name** | Full-Stack Developer | [LinkedIn](#) • [GitHub](#) |
-| *Add team members* | *Roles* | *Links* |
-
----
-
 ## 📄 License  
 This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
 
@@ -268,10 +259,10 @@ This project is licensed under the **MIT License** – see the [LICENSE](LICENSE
 
 ## 📞 Contact & Support  
 
-**Project Maintainer:** Your Name  
-**Email:** your.email@example.com  
-**LinkedIn:** [Your Profile](#)  
-**GitHub:** [@yourusername](#)  
+**Project Maintainer:** Shubhdeep Singh 
+**Email:** shubhdeep422@gmail.com  
+**LinkedIn:** [Shubhdeep Singh](https://www.linkedin.com/in/shubhdeep-singh-3708b63a3/)  
+**GitHub:** [@shubhdeep-04](https://github.com/shubhdeep-04)  
 
 Found a bug? Please open an issue on GitHub.  
 Want to contribute? Fork the repo and submit a PR!  
@@ -281,7 +272,7 @@ Want to contribute? Fork the repo and submit a PR!
 ## ⭐ Show Your Support  
 If you find this project useful, please give it a star on GitHub!  
 
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/travel-booking-system?style=social)](https://github.com/yourusername/travel-booking-system)  
+[![GitHub Stars](https://img.shields.io/github/stars/shubhdeep-04/travel-booking-system?style=social)](https://github.com/yourusername/travel-booking-system)  
 
 ---
 
