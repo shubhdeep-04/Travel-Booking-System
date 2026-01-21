@@ -272,7 +272,7 @@ Want to contribute? Fork the repo and submit a PR!
 ## ⭐ Show Your Support  
 If you find this project useful, please give it a star on GitHub!  
 
-[![GitHub Stars](https://img.shields.io/github/stars/shubhdeep-04/travel-booking-system?style=social)](https://github.com/yourusername/travel-booking-system)  
+[![GitHub Stars](https://img.shields.io/github/stars/shubhdeep-04/travel-booking-system?style=social)](https://github.com/shubhdeep-04/travel-booking-system)  
 
 ---
 
