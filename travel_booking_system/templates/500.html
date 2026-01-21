@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Server Error - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-page">
+                <h1 class="display-1 text-danger">500</h1>
+                <h2 class="mb-4">Internal Server Error</h2>
+                <p class="lead mb-4">
+                    Something went wrong on our end. Our team has been notified and is working to fix the issue.
+                    Please try again in a few moments.
+                </p>
+                <div class="error-image mb-4">
+                    <img src="{% static 'images/500.svg' %}" alt="500 Error" class="img-fluid" style="max-height: 300px;">
+                </div>
+                <div class="error-details mb-4">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Technical Details:</strong> {{ exception|default:"An unexpected error occurred." }}
+                    </div>
+                </div>
+                <div class="error-actions">
+                    <a href="{% url 'home' %}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-home me-2"></i>Go to Homepage
+                    </a>
+                    <button onclick="window.location.reload()" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                </div>
+                <div class="mt-4">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="quick-link">
+                                <i class="fas fa-hotel fa-2x text-primary mb-2"></i>
+                                <h5>Hotels</h5>
+                                <p><a href="{% url 'hotels:hotel_search' %}">Book your stay</a></p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="quick-link">
+                                <i class="fas fa-car fa-2x text-success mb-2"></i>
+                                <h5>Cars</h5>
+                                <p><a href="{% url 'cars:car_list' %}">Rent a car</a></p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="quick-link">
+                                <i class="fas fa-bus fa-2x text-warning mb-2"></i>
+                                <h5>Buses</h5>
+                                <p><a href="{% url 'buses:bus_search' %}">Bus tickets</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    padding: 40px 0;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.error-page h1 {
+    font-size: 8rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.error-page h2 {
+    color: #333;
+    font-weight: 600;
+}
+
+.quick-link {
+    padding: 20px;
+    border-radius: 10px;
+    background: #f8f9fa;
+    transition: transform 0.3s;
+}
+
+.quick-link:hover {
+    transform: translateY(-5px);
+    background: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.btn-lg {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    border-radius: 50px;
+}
+
+@media (max-width: 768px) {
+    .error-page h1 {
+        font-size: 5rem;
+    }
+    
+    .error-actions .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .error-actions .btn.me-3 {
+        margin-right: 0 !important;
+    }
+}
+</style>
+{% endblock %}

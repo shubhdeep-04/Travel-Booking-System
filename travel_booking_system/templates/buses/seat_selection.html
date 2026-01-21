@@ -1,0 +1,621 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Seats - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3>Select Your Seats</h3>
+                    <p class="text-muted mb-0">Choose your preferred seats for the journey</p>
+                </div>
+                <div class="text-end">
+                    <div class="journey-info">
+                        <h5 class="mb-1">{{ bus.route_from }} → {{ bus.route_to }}</h5>
+                        <p class="text-muted mb-0">
+                            {{ travel_date }} | {{ bus.departure_time|time:"h:i A" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Seat Layout -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Seat Layout</h5>
+                        <div>
+                            <span class="badge bg-light text-dark me-2">
+                                Available: <span id="availableSeatsCount">{{ available_seats|length }}</span>
+                            </span>
+                            <span class="badge bg-light text-dark">
+                                Max: {{ max_seats }} seats per booking
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Bus Driver Area -->
+                    <div class="driver-area text-center mb-5">
+                        <div class="driver-box">
+                            <i class="fas fa-bus fa-3x text-muted"></i>
+                            <div class="mt-2">
+                                <small class="text-muted">Driver</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seat Layout Container -->
+                    <div id="seatLayoutContainer">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-warning" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading seat layout...</p>
+                        </div>
+                    </div>
+
+                    <!-- Seat Legend -->
+                    <div class="seat-legend mt-4">
+                        <h6>Seat Legend</h6>
+                        <div class="row">
+                            <div class="col-md-3 col-6">
+                                <div class="legend-item d-flex align-items-center mb-2">
+                                    <div class="seat-example available me-2"></div>
+                                    <span>Available</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="legend-item d-flex align-items-center mb-2">
+                                    <div class="seat-example selected me-2"></div>
+                                    <span>Selected</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="legend-item d-flex align-items-center mb-2">
+                                    <div class="seat-example booked me-2"></div>
+                                    <span>Booked</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="legend-item d-flex align-items-center mb-2">
+                                    <div class="seat-example women me-2"></div>
+                                    <span>Women Only</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seat Type Information -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Seat Types & Features</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="seat-type-info text-center p-3">
+                                <i class="fas fa-window-restore fa-2x text-primary mb-2"></i>
+                                <h6>Window Seats</h6>
+                                <p class="small text-muted mb-0">Enjoy the view outside</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="seat-type-info text-center p-3">
+                                <i class="fas fa-arrows-alt-h fa-2x text-success mb-2"></i>
+                                <h6>Aisle Seats</h6>
+                                <p class="small text-muted mb-0">Easy to move around</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="seat-type-info text-center p-3">
+                                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                                <h6>Emergency Exit</h6>
+                                <p class="small text-muted mb-0">Extra legroom</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Selected Seats & Actions -->
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 20px;">
+                <!-- Selected Seats Summary -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Selected Seats</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="selected-seats-summary mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6>Seats Selected</h6>
+                                <span class="badge bg-warning" id="selectedCount">0</span>
+                            </div>
+                            
+                            <div id="selectedSeatsList" class="selected-seats-list mb-3">
+                                <p class="text-muted text-center">No seats selected</p>
+                            </div>
+                            
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Maximum {{ max_seats }} seats can be selected per booking
+                            </div>
+                        </div>
+
+                        <!-- Fare Calculation -->
+                        <div class="fare-calculation mb-4">
+                            <h6>Fare Calculation</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Base Fare (x<span id="seatCount">0</span>):</td>
+                                        <td class="text-end">$<span id="baseFare">0.00</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tax ({{ bus.tax_percentage }}%):</td>
+                                        <td class="text-end">$<span id="taxAmount">0.00</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Service Charge:</td>
+                                        <td class="text-end">$<span id="serviceCharge">0.00</span></td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <td><strong>Total Amount:</strong></td>
+                                        <td class="text-end">
+                                            <strong class="h5">$<span id="totalFare">0.00</span></strong>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <button id="clearSelection" class="btn btn-outline-secondary w-100 mb-2">
+                                <i class="fas fa-times me-2"></i>Clear Selection
+                            </button>
+                            
+                            <form id="seatSelectionForm" method="get" action="{% url 'buses:bus_booking' bus.id %}">
+                                <input type="hidden" name="travel_date" value="{{ travel_date }}">
+                                <input type="hidden" name="seats" id="selectedSeatsInput" value="">
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-lg" id="proceedButton" disabled>
+                                        <i class="fas fa-arrow-right me-2"></i>Proceed with <span id="seatCountText">0</span> Seat(s)
+                                    </button>
+                                    
+                                    <a href="{% url 'buses:bus_detail' bus.id %}?travel_date={{ travel_date }}" 
+                                       class="btn btn-outline-warning">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to Bus Details
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips & Information -->
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-lightbulb text-warning me-2"></i>Tips</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled small">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Select seats together for group booking
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Window seats are great for views
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Aisle seats offer easier access
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Front seats have less motion
+                            </li>
+                            <li>
+                                <i class="fas fa-check text-success me-2"></i>
+                                Women-only seats are marked in pink
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.driver-area {
+    position: relative;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.driver-box {
+    display: inline-block;
+    padding: 20px 40px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.seat-layout-container {
+    min-height: 400px;
+    position: relative;
+}
+
+.seat-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.row-label {
+    width: 30px;
+    text-align: center;
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.seat {
+    width: 45px;
+    height: 45px;
+    margin: 0 5px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    font-weight: 600;
+    position: relative;
+}
+
+.seat.available {
+    background: #e7f6e7;
+    color: #198754;
+    border-color: #c8e6c9;
+}
+
+.seat.available:hover {
+    background: #c8e6c9;
+    transform: scale(1.1);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.seat.selected {
+    background: #ffc107;
+    color: #000;
+    border-color: #ffc107;
+    box-shadow: 0 3px 10px rgba(255, 193, 7, 0.3);
+}
+
+.seat.booked {
+    background: #dc3545;
+    color: white;
+    cursor: not-allowed;
+    opacity: 0.7;
+    border-color: #dc3545;
+}
+
+.seat.women {
+    background: #f8bbd0;
+    color: #880e4f;
+    border-color: #f48fb1;
+}
+
+.seat.emergency {
+    background: #fff3cd;
+    color: #856404;
+    border: 2px dashed #ffc107;
+}
+
+.seat.disabled {
+    background: #f8f9fa;
+    color: #adb5bd;
+    cursor: not-allowed;
+}
+
+.aisle-space {
+    width: 40px;
+    margin: 0 15px;
+}
+
+.seat-label {
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    right: 0;
+    font-size: 0.7rem;
+    text-align: center;
+    color: #666;
+}
+
+.seat-legend {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.seat-example {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #dee2e6;
+    border-radius: 5px;
+}
+
+.selected-seats-list {
+    min-height: 60px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.selected-seat {
+    background: #ffc107;
+    color: #000;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.selected-seat button {
+    background: none;
+    border: none;
+    color: #666;
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.selected-seat button:hover {
+    color: #dc3545;
+}
+
+.seat-type-info {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.seat-type-info:hover {
+    background: #f8f9fa;
+    transform: translateY(-5px);
+}
+
+.fare-calculation table td {
+    padding: 8px 0;
+    border-color: #dee2e6;
+}
+
+#proceedButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .seat {
+        width: 35px;
+        height: 35px;
+        font-size: 0.8rem;
+        margin: 0 2px;
+    }
+    
+    .aisle-space {
+        width: 20px;
+        margin: 0 5px;
+    }
+    
+    .driver-box {
+        padding: 15px 30px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuration
+    const maxSeats = {{ max_seats }};
+    const baseFare = {{ bus.base_fare }};
+    const taxPercentage = {{ bus.tax_percentage }};
+    const serviceCharge = 2.00;
+    
+    // State
+    let selectedSeats = [];
+    
+    // Initialize seat layout
+    function initializeSeatLayout() {
+        const container = document.getElementById('seatLayoutContainer');
+        
+        // Sample seat layout data (in production, this would come from an API)
+        const seatLayout = {
+            rows: 10,
+            seatsPerRow: 4,
+            layout: [1, 2, 1], // 1 seat, aisle, 2 seats, aisle, 1 seat
+            bookedSeats: ['1D', '2A', '3C', '5B', '7D', '9A'],
+            womenSeats: ['4A', '4B', '8C', '8D'],
+            emergencySeats: ['1A', '10A']
+        };
+        
+        let html = '';
+        
+        // Generate seat rows
+        for (let row = 1; row <= seatLayout.rows; row++) {
+            html += `<div class="seat-row">`;
+            html += `<div class="row-label">${row}</div>`;
+            
+            // Generate seats for this row
+            let seatIndex = 0;
+            for (let section of seatLayout.layout) {
+                for (let s = 0; s < section; s++) {
+                    const seatNumber = `${row}${String.fromCharCode(65 + seatIndex)}`;
+                    const isBooked = seatLayout.bookedSeats.includes(seatNumber);
+                    const isWomen = seatLayout.womenSeats.includes(seatNumber);
+                    const isEmergency = seatLayout.emergencySeats.includes(seatNumber);
+                    
+                    let seatClass = 'seat ';
+                    let title = `Seat ${seatNumber}`;
+                    
+                    if (isBooked) {
+                        seatClass += 'booked';
+                        title += ' (Booked)';
+                    } else if (isWomen) {
+                        seatClass += 'women';
+                        title += ' (Women Only)';
+                    } else if (isEmergency) {
+                        seatClass += 'emergency';
+                        title += ' (Emergency Exit)';
+                    } else {
+                        seatClass += 'available';
+                    }
+                    
+                    html += `<div class="${seatClass}" data-seat="${seatNumber}" title="${title}" onclick="handleSeatClick('${seatNumber}')">`;
+                    html += seatNumber;
+                    html += `</div>`;
+                    
+                    seatIndex++;
+                }
+                
+                // Add aisle space between sections
+                if (seatIndex < seatLayout.seatsPerRow) {
+                    html += `<div class="aisle-space"></div>`;
+                }
+            }
+            
+            html += `</div>`;
+        }
+        
+        container.innerHTML = html;
+    }
+    
+    // Handle seat click
+    window.handleSeatClick = function(seatNumber) {
+        const seatElement = document.querySelector(`[data-seat="${seatNumber}"]`);
+        
+        // Check if seat is available
+        if (seatElement.classList.contains('booked') || seatElement.classList.contains('disabled')) {
+            return;
+        }
+        
+        // Check if seat is already selected
+        if (selectedSeats.includes(seatNumber)) {
+            // Deselect seat
+            selectedSeats = selectedSeats.filter(s => s !== seatNumber);
+            seatElement.classList.remove('selected');
+            seatElement.classList.add('available');
+        } else {
+            // Check maximum seats limit
+            if (selectedSeats.length >= maxSeats) {
+                alert(`Maximum ${maxSeats} seats can be selected per booking`);
+                return;
+            }
+            
+            // Select seat
+            selectedSeats.push(seatNumber);
+            seatElement.classList.remove('available');
+            seatElement.classList.add('selected');
+        }
+        
+        updateSelectionSummary();
+    }
+    
+    // Update selection summary
+    function updateSelectionSummary() {
+        // Update selected count
+        document.getElementById('selectedCount').textContent = selectedSeats.length;
+        document.getElementById('seatCount').textContent = selectedSeats.length;
+        document.getElementById('seatCountText').textContent = selectedSeats.length;
+        
+        // Update selected seats list
+        const seatsList = document.getElementById('selectedSeatsList');
+        if (selectedSeats.length > 0) {
+            let html = '';
+            selectedSeats.forEach(seat => {
+                html += `<div class="selected-seat">
+                    ${seat}
+                    <button type="button" onclick="removeSeat('${seat}')">&times;</button>
+                </div>`;
+            });
+            seatsList.innerHTML = html;
+        } else {
+            seatsList.innerHTML = '<p class="text-muted text-center">No seats selected</p>';
+        }
+        
+        // Update fare calculation
+        updateFareCalculation();
+        
+        // Update form input
+        document.getElementById('selectedSeatsInput').value = selectedSeats.join(',');
+        
+        // Enable/disable proceed button
+        const proceedButton = document.getElementById('proceedButton');
+        proceedButton.disabled = selectedSeats.length === 0;
+    }
+    
+    // Remove seat from selection
+    window.removeSeat = function(seatNumber) {
+        handleSeatClick(seatNumber);
+    }
+    
+    // Update fare calculation
+    function updateFareCalculation() {
+        const seatCount = selectedSeats.length;
+        const totalBaseFare = baseFare * seatCount;
+        const totalTax = (totalBaseFare * taxPercentage) / 100;
+        const totalServiceCharge = serviceCharge * seatCount;
+        const totalFare = totalBaseFare + totalTax + totalServiceCharge;
+        
+        document.getElementById('baseFare').textContent = totalBaseFare.toFixed(2);
+        document.getElementById('taxAmount').textContent = totalTax.toFixed(2);
+        document.getElementById('serviceCharge').textContent = totalServiceCharge.toFixed(2);
+        document.getElementById('totalFare').textContent = totalFare.toFixed(2);
+    }
+    
+    // Clear selection
+    document.getElementById('clearSelection').addEventListener('click', function() {
+        selectedSeats.forEach(seat => {
+            const seatElement = document.querySelector(`[data-seat="${seat}"]`);
+            if (seatElement) {
+                seatElement.classList.remove('selected');
+                seatElement.classList.add('available');
+            }
+        });
+        selectedSeats = [];
+        updateSelectionSummary();
+    });
+    
+    // Initialize
+    initializeSeatLayout();
+});
+</script>
+{% endblock %}

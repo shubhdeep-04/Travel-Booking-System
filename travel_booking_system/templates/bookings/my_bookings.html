@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<!-- templates/bookings/my_bookings.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}My Bookings - Travel Booking System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    .booking-card {
+        transition: transform 0.3s ease;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .booking-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .booking-status {
+        font-size: 0.8rem;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    .status-confirmed {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .status-cancelled {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .status-completed {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    .service-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 15px;
+    }
+    .hotel-icon {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+    .car-icon {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+    .bus-icon {
+        background-color: #fff3e0;
+        color: #f57c00;
+    }
+    .train-icon {
+        background-color: #f3e5f5;
+        color: #7b1fa2;
+    }
+    .filter-section {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    .stat-card {
+        text-align: center;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .stat-card h3 {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2 mb-0">My Bookings</h1>
+            <p class="text-muted">Manage all your travel bookings in one place</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card bg-primary text-white">
+                <i class="fas fa-calendar-check fa-2x"></i>
+                <h3>{{ total_bookings }}</h3>
+                <p>Total Bookings</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-success text-white">
+                <i class="fas fa-check-circle fa-2x"></i>
+                <h3>{{ confirmed_bookings }}</h3>
+                <p>Confirmed</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-warning text-white">
+                <i class="fas fa-clock fa-2x"></i>
+                <h3>{{ upcoming_bookings }}</h3>
+                <p>Upcoming</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-info text-white">
+                <i class="fas fa-history fa-2x"></i>
+                <h3>{{ total_bookings|add:"-confirmed_bookings" }}</h3>
+                <p>Past/Cancelled</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+        <h5 class="mb-3">Filter Bookings</h5>
+        <form method="GET" action="{% url 'bookings:my_bookings' %}" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="all" {% if status == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="PENDING" {% if status == 'PENDING' %}selected{% endif %}>Pending</option>
+                    <option value="CONFIRMED" {% if status == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
+                    <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                    <option value="COMPLETED" {% if status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Service Type</label>
+                <select name="service_type" class="form-select">
+                    <option value="all" {% if service_type == 'all' %}selected{% endif %}>All Services</option>
+                    <option value="HOTEL" {% if service_type == 'HOTEL' %}selected{% endif %}>Hotels</option>
+                    <option value="CAR" {% if service_type == 'CAR' %}selected{% endif %}>Cars</option>
+                    <option value="BUS" {% if service_type == 'BUS' %}selected{% endif %}>Buses</option>
+                    <option value="TRAIN" {% if service_type == 'TRAIN' %}selected{% endif %}>Trains</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">From Date</label>
+                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To Date</label>
+                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{% url 'bookings:my_bookings' %}" class="btn btn-outline-secondary">Reset</a>
+                <a href="{% url 'bookings:booking_calendar' %}" class="btn btn-outline-info float-end">
+                    <i class="fas fa-calendar-alt"></i> Calendar View
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bookings List -->
+    {% if bookings %}
+    <div class="row">
+        {% for booking in bookings %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="booking-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-start mb-3">
+                        {% if booking.service_type == 'HOTEL' %}
+                        <div class="service-icon hotel-icon">
+                            <i class="fas fa-hotel"></i>
+                        </div>
+                        {% elif booking.service_type == 'CAR' %}
+                        <div class="service-icon car-icon">
+                            <i class="fas fa-car"></i>
+                        </div>
+                        {% elif booking.service_type == 'BUS' %}
+                        <div class="service-icon bus-icon">
+                            <i class="fas fa-bus"></i>
+                        </div>
+                        {% elif booking.service_type == 'TRAIN' %}
+                        <div class="service-icon train-icon">
+                            <i class="fas fa-train"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="flex-grow-1">
+                            <h5 class="card-title mb-1">{{ booking.service_name|truncatechars:30 }}</h5>
+                            <p class="text-muted small mb-2">
+                                Ref: <strong>{{ booking.booking_reference }}</strong>
+                            </p>
+                            <span class="booking-status status-{{ booking.status|lower }}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="booking-details">
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <small class="text-muted">Booking Date</small>
+                                <p class="mb-0">{{ booking.booking_date|date:"M d, Y" }}</p>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Amount</small>
+                                <p class="mb-0 fw-bold">${{ booking.total_amount|intcomma }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if booking.check_in_date %}
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <small class="text-muted">Check-in</small>
+                                <p class="mb-0">{{ booking.check_in_date|date:"M d, Y" }}</p>
+                            </div>
+                            {% if booking.check_out_date %}
+                            <div class="col-6">
+                                <small class="text-muted">Check-out</small>
+                                <p class="mb-0">{{ booking.check_out_date|date:"M d, Y" }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if booking.travel_date %}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <small class="text-muted">Travel Date</small>
+                                <p class="mb-0">{{ booking.travel_date|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{% url 'bookings:booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                        <a href="{% url 'bookings:booking_invoice' booking.id %}" class="btn btn-sm btn-outline-info">
+                            <i class="fas fa-file-invoice"></i> Invoice
+                        </a>
+                        {% if booking.status == 'CONFIRMED' %}
+                        <a href="#" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#cancelModal{{ booking.id }}">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cancel Modal -->
+        <div class="modal fade" id="cancelModal{{ booking.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Cancel Booking</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to cancel booking <strong>{{ booking.booking_reference }}</strong>?</p>
+                        <form method="POST" action="{% url 'bookings:cancel_booking' booking.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="reason{{ booking.id }}" class="form-label">Cancellation Reason</label>
+                                <textarea class="form-control" id="reason{{ booking.id }}" name="reason" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+        <h4>No Bookings Found</h4>
+        <p class="text-muted">You don't have any bookings matching your filters.</p>
+        <a href="{% url 'hotels:hotel_list' %}" class="btn btn-primary">
+            <i class="fas fa-search"></i> Book a Hotel
+        </a>
+        <a href="{% url 'buses:bus_search' %}" class="btn btn-success ms-2">
+            <i class="fas fa-bus"></i> Book a Bus
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit filter form when status changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusSelect = document.querySelector('select[name="status"]');
+        const serviceSelect = document.querySelector('select[name="service_type"]');
+        
+        [statusSelect, serviceSelect].forEach(select => {
+            if (select) {
+                select.addEventListener('change', function() {
+                    this.form.submit();
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

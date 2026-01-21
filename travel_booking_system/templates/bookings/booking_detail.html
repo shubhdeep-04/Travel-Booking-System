@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<!-- templates/bookings/booking_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Booking Details - {{ booking.booking_reference }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .booking-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+        border-radius: 10px;
+    }
+    .status-badge {
+        font-size: 0.9rem;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .info-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        background: white;
+    }
+    .info-card h5 {
+        color: #495057;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .detail-item {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    .detail-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    .detail-label {
+        font-weight: 500;
+        color: #6c757d;
+        min-width: 120px;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -34px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #007bff;
+        border: 3px solid white;
+        box-shadow: 0 0 0 3px #dee2e6;
+    }
+    .timeline-date {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .action-btn {
+        min-width: 120px;
+        margin: 5px;
+    }
+    .qr-code {
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        display: inline-block;
+        border: 1px solid #e0e0e0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Booking Header -->
+    <div class="booking-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="h2 mb-2">Booking Details</h1>
+                    <p class="mb-0">
+                        <i class="fas fa-hashtag"></i> {{ booking.booking_reference }}
+                        <span class="mx-2">|</span>
+                        <i class="far fa-calendar"></i> {{ booking.booking_date|date:"F d, Y" }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if booking.status == 'CONFIRMED' %}
+                    <span class="status-badge bg-success">CONFIRMED</span>
+                    {% elif booking.status == 'PENDING' %}
+                    <span class="status-badge bg-warning">PENDING</span>
+                    {% elif booking.status == 'CANCELLED' %}
+                    <span class="status-badge bg-danger">CANCELLED</span>
+                    {% elif booking.status == 'COMPLETED' %}
+                    <span class="status-badge bg-info">COMPLETED</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="container mb-4">
+        <div class="d-flex flex-wrap justify-content-between">
+            <div>
+                <a href="{% url 'bookings:my_bookings' %}" class="btn btn-outline-secondary action-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Bookings
+                </a>
+                <a href="{% url 'bookings:booking_invoice' booking.id %}" class="btn btn-outline-primary action-btn">
+                    <i class="fas fa-file-invoice"></i> View Invoice
+                </a>
+                <button onclick="window.print()" class="btn btn-outline-info action-btn">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+            <div>
+                {% if booking.status == 'CONFIRMED' %}
+                <button class="btn btn-warning action-btn" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                    <i class="fas fa-times"></i> Cancel Booking
+                </button>
+                {% endif %}
+                <a href="{% url 'bookings:download_ticket' booking.id %}" class="btn btn-success action-btn">
+                    <i class="fas fa-download"></i> Download Ticket
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <!-- Left Column: Booking Details -->
+            <div class="col-lg-8">
+                <!-- Service Information -->
+                <div class="info-card">
+                    <h5>
+                        {% if booking.service_type == 'HOTEL' %}
+                        <i class="fas fa-hotel text-primary"></i>
+                        {% elif booking.service_type == 'CAR' %}
+                        <i class="fas fa-car text-success"></i>
+                        {% elif booking.service_type == 'BUS' %}
+                        <i class="fas fa-bus text-warning"></i>
+                        {% elif booking.service_type == 'TRAIN' %}
+                        <i class="fas fa-train text-info"></i>
+                        {% endif %}
+                        {{ booking.get_service_type_display }} Details
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Service:</span>
+                                <span class="flex-grow-1">{{ booking.service_name }}</span>
+                            </div>
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Booking Date:</span>
+                                <span class="flex-grow-1">{{ booking.booking_date|date:"M d, Y, h:i A" }}</span>
+                            </div>
+                            {% if booking.check_in_date %}
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Check-in:</span>
+                                <span class="flex-grow-1">{{ booking.check_in_date|date:"M d, Y" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Status:</span>
+                                <span class="flex-grow-1">
+                                    {% if booking.status == 'CONFIRMED' %}
+                                    <span class="badge bg-success">{{ booking.get_status_display }}</span>
+                                    {% elif booking.status == 'PENDING' %}
+                                    <span class="badge bg-warning">{{ booking.get_status_display }}</span>
+                                    {% elif booking.status == 'CANCELLED' %}
+                                    <span class="badge bg-danger">{{ booking.get_status_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ booking.get_status_display }}</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% if booking.check_out_date %}
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Check-out:</span>
+                                <span class="flex-grow-1">{{ booking.check_out_date|date:"M d, Y" }}</span>
+                            </div>
+                            {% endif %}
+                            {% if booking.travel_date %}
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Travel Date:</span>
+                                <span class="flex-grow-1">{{ booking.travel_date|date:"M d, Y" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Service Specific Details -->
+                    {% if service_details %}
+                    <div class="mt-4">
+                        <h6 class="mb-3">Additional Details</h6>
+                        <div class="row">
+                            {% for key, value in service_details.items %}
+                            <div class="col-md-6">
+                                <div class="detail-item d-flex">
+                                    <span class="detail-label">{{ key|title }}:</span>
+                                    <span class="flex-grow-1">{{ value }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Passenger Information -->
+                <div class="info-card">
+                    <h5><i class="fas fa-users text-primary"></i> Passenger Information</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Name:</span>
+                                <span class="flex-grow-1">{{ booking.contact_name }}</span>
+                            </div>
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Email:</span>
+                                <span class="flex-grow-1">{{ booking.contact_email }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Phone:</span>
+                                <span class="flex-grow-1">{{ booking.contact_phone }}</span>
+                            </div>
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Passengers:</span>
+                                <span class="flex-grow-1">
+                                    {{ booking.adults }} Adult(s), {{ booking.children }} Child(ren)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if booking.special_requests %}
+                    <div class="mt-3">
+                        <div class="detail-item">
+                            <span class="detail-label d-block">Special Requests:</span>
+                            <p class="mt-2">{{ booking.special_requests }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Price Breakdown -->
+                <div class="info-card">
+                    <h5><i class="fas fa-receipt text-success"></i> Price Breakdown</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <td>Base Amount</td>
+                                    <td class="text-end">${{ booking.base_amount|intcomma }}</td>
+                                </tr>
+                                {% if booking.tax_amount %}
+                                <tr>
+                                    <td>Tax</td>
+                                    <td class="text-end">${{ booking.tax_amount|intcomma }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if booking.discount_amount %}
+                                <tr>
+                                    <td>Discount</td>
+                                    <td class="text-end text-danger">-${{ booking.discount_amount|intcomma }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if booking.refund_amount and booking.status == 'CANCELLED' %}
+                                <tr>
+                                    <td>Refund Amount</td>
+                                    <td class="text-end text-success">${{ booking.refund_amount|intcomma }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr class="table-active">
+                                    <th>Total Amount</th>
+                                    <th class="text-end">${{ booking.total_amount|intcomma }}</th>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Timeline & Actions -->
+            <div class="col-lg-4">
+                <!-- Booking Timeline -->
+                <div class="info-card">
+                    <h5><i class="fas fa-history text-info"></i> Booking Timeline</h5>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Booking Created</h6>
+                            <p class="timeline-date mb-2">{{ booking.booking_date|date:"M d, Y, h:i A" }}</p>
+                            <p class="small text-muted mb-0">Booking reference {{ booking.booking_reference }} was created.</p>
+                        </div>
+                        
+                        {% if history %}
+                        {% for entry in history %}
+                        <div class="timeline-item">
+                            <h6 class="mb-1">{{ entry.notes }}</h6>
+                            <p class="timeline-date mb-2">{{ entry.created_at|date:"M d, Y, h:i A" }}</p>
+                            {% if entry.changed_by %}
+                            <p class="small text-muted mb-0">Changed by: {{ entry.changed_by.username }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        
+                        {% if booking.status == 'CANCELLED' and booking.cancellation_date %}
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Booking Cancelled</h6>
+                            <p class="timeline-date mb-2">{{ booking.cancellation_date|date:"M d, Y, h:i A" }}</p>
+                            {% if booking.cancellation_reason %}
+                            <p class="small text-muted mb-0">Reason: {{ booking.cancellation_reason }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Important Information -->
+                <div class="info-card">
+                    <h5><i class="fas fa-info-circle text-warning"></i> Important Information</h5>
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-exclamation-circle"></i> Things to Remember:</h6>
+                        <ul class="mb-0">
+                            <li>Keep your booking reference handy</li>
+                            <li>Arrive at least 30 minutes before departure</li>
+                            <li>Carry valid ID proof</li>
+                            <li>Check cancellation policy</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- QR Code Placeholder -->
+                <div class="info-card text-center">
+                    <h5><i class="fas fa-qrcode text-primary"></i> Booking QR Code</h5>
+                    <div class="qr-code mb-3">
+                        <!-- In production, generate actual QR code -->
+                        <div style="width: 150px; height: 150px; background: #f8f9fa; display: inline-block;"></div>
+                    </div>
+                    <p class="small text-muted">Scan this code at check-in</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents -->
+        {% if documents %}
+        <div class="info-card">
+            <h5><i class="fas fa-file-alt text-secondary"></i> Booking Documents</h5>
+            <div class="row">
+                {% for doc in documents %}
+                <div class="col-md-4 mb-3">
+                    <div class="card document-card">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-file-pdf text-danger"></i> {{ doc.name }}
+                            </h6>
+                            <p class="card-text small text-muted">{{ doc.description|truncatechars:50 }}</p>
+                            <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cancel Modal -->
+{% if booking.status == 'CONFIRMED' %}
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel booking <strong>{{ booking.booking_reference }}</strong>?</p>
+                <form method="POST" action="{% url 'bookings:cancel_booking' booking.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Cancellation Reason</label>
+                        <textarea class="form-control" name="reason" rows="3" required 
+                                  placeholder="Please provide a reason for cancellation..."></textarea>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Cancellation charges may apply based on our policy.
+                    </div>
+                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

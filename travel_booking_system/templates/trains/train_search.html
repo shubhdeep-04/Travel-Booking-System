@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Search Trains - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Search Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="fas fa-train me-2"></i>Search Trains</h4>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'trains:train_search' %}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="id_from" class="form-label">From Station</label>
+                        <input type="text" class="form-control" id="id_from" name="from" 
+                               value="{{ request.GET.from }}" placeholder="Departure station" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_to" class="form-label">To Station</label>
+                        <input type="text" class="form-control" id="id_to" name="to" 
+                               value="{{ request.GET.to }}" placeholder="Destination station" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_travel_date" class="form-label">Travel Date</label>
+                        <input type="date" class="form-control" id="id_travel_date" name="travel_date" 
+                               value="{{ request.GET.travel_date|default:'' }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_train_type" class="form-label">Train Type</label>
+                        <select class="form-select" id="id_train_type" name="train_type">
+                            <option value="">All Types</option>
+                            {% for type_code, type_name in train_types %}
+                            <option value="{{ type_code }}" {% if request.GET.train_type == type_code %}selected{% endif %}>
+                                {{ type_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-search me-2"></i>Search Trains
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Stations -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="mb-3"><i class="fas fa-bolt text-warning me-2"></i>Popular Stations</h5>
+            <div class="d-flex flex-wrap gap-2">
+                {% for station in popular_stations|slice:":8" %}
+                <a href="?from={{ station.name }}" class="btn btn-outline-primary">
+                    <i class="fas fa-train me-1"></i>{{ station.name }}
+                </a>
+                {% empty %}
+                <div class="alert alert-info">
+                    No popular stations available.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    {% if trains %}
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Filters -->
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header">
+                    <h6 class="mb-0">Filters</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filterForm">
+                        <input type="hidden" name="from" value="{{ request.GET.from }}">
+                        <input type="hidden" name="to" value="{{ request.GET.to }}">
+                        <input type="hidden" name="travel_date" value="{{ request.GET.travel_date }}">
+                        
+                        <h6 class="mb-3">Coach Classes</h6>
+                        {% for coach_type in coach_types %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="coach_class" 
+                                   value="{{ coach_type.coach_class }}" id="class{{ forloop.counter }}"
+                                   {% if coach_type.coach_class in request.GET.getlist.coach_class %}checked{% endif %}>
+                            <label class="form-check-label" for="class{{ forloop.counter }}">
+                                {{ coach_type.name }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                        
+                        <h6 class="mt-4 mb-3">Departure Time</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="time_range" 
+                                           value="morning" id="morning"
+                                           {% if request.GET.time_range == 'morning' %}checked{% endif %}>
+                                    <label class="form-check-label" for="morning">
+                                        6AM - 12PM
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="time_range" 
+                                           value="evening" id="evening"
+                                           {% if request.GET.time_range == 'evening' %}checked{% endif %}>
+                                    <label class="form-check-label" for="evening">
+                                        6PM - 12AM
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="time_range" 
+                                           value="afternoon" id="afternoon"
+                                           {% if request.GET.time_range == 'afternoon' %}checked{% endif %}>
+                                    <label class="form-check-label" for="afternoon">
+                                        12PM - 6PM
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="time_range" 
+                                           value="night" id="night"
+                                           {% if request.GET.time_range == 'night' %}checked{% endif %}>
+                                    <label class="form-check-label" for="night">
+                                        12AM - 6AM
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-danger w-100 mt-3">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <!-- Results Count -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>{{ trains.paginator.count }} Trains Found</h5>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        Sort By: {% if request.GET.sort_by == 'departure' %}Departure Time{% elif request.GET.sort_by == 'duration' %}Journey Duration{% elif request.GET.sort_by == 'price_low' %}Price: Low to High{% else %}Departure Time{% endif %}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=departure">Departure Time</a></li>
+                        <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=duration">Journey Duration</a></li>
+                        <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=price_low">Price: Low to High</a></li>
+                        <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=price_high">Price: High to Low</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Train List -->
+            {% for train in trains %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3">
+                                    <div class="train-icon">
+                                        <i class="fas fa-train fa-3x text-danger"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">{{ train.train_number }} - {{ train.train_name }}</h5>
+                                    <p class="text-muted mb-2">
+                                        <span class="badge bg-danger">{{ train.get_train_type_display }}</span>
+                                        {% if train.has_ac %}<span class="badge bg-info ms-2">AC</span>{% endif %}
+                                        {% if train.has_pantry %}<span class="badge bg-success ms-2">Pantry</span>{% endif %}
+                                    </p>
+                                    <div class="route-info mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="text-center">
+                                                <div class="fw-bold">{{ train.departure_time|time:"h:i A" }}</div>
+                                                <small class="text-muted">{{ train.source_station }}</small>
+                                                <div class="small text-muted">{{ train.source_station_code }}</div>
+                                            </div>
+                                            <div class="flex-grow-1 mx-3">
+                                                <div class="route-line">
+                                                    <div class="line"></div>
+                                                    <i class="fas fa-train text-danger"></i>
+                                                </div>
+                                                <div class="text-center text-muted small mt-1">
+                                                    {% if train.duration_hours %}
+                                                    {{ train.duration_hours }} hours
+                                                    {% endif %}
+                                                    {% if train.distance_km %}
+                                                    | {{ train.distance_km }} km
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="text-center">
+                                                <div class="fw-bold">{{ train.arrival_time|time:"h:i A" }}</div>
+                                                <small class="text-muted">{{ train.destination_station }}</small>
+                                                <div class="small text-muted">{{ train.destination_station_code }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="running-days mb-2">
+                                        <small class="text-muted">
+                                            <i class="far fa-calendar me-1"></i>
+                                            Running Days: {{ train.get_running_days_display }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-end">
+                                <div class="mb-2">
+                                    <span class="h6 text-muted">Starting from</span>
+                                    <div class="h4 text-danger">${{ min_fare|floatformat:2 }}</div>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-chair"></i> Seats Available
+                                    </span>
+                                </div>
+                                <a href="{% url 'trains:train_detail' train.id %}?from={{ request.GET.from }}&to={{ request.GET.to }}&travel_date={{ request.GET.travel_date }}" 
+                                   class="btn btn-danger w-100">
+                                    <i class="fas fa-eye me-1"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if trains.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if trains.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ trains.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in trains.paginator.page_range %}
+                        {% if trains.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                        {% elif i > trains.number|add:-3 and i < trains.number|add:3 %}
+                        <li class="page-item"><a class="page-link" href="?{{ request.GET.urlencode }}&page={{ i }}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if trains.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ trains.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    {% elif request.GET.from and request.GET.to %}
+    <div class="text-center py-5">
+        <div class="empty-state">
+            <i class="fas fa-train fa-4x text-muted mb-3"></i>
+            <h4>No trains found</h4>
+            <p class="text-muted mb-4">We couldn't find any trains for your selected route and date.</p>
+            <div class="suggestions mt-4">
+                <h6 class="mb-3">Suggestions:</h6>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'buses:bus_search' %}?from={{ request.GET.from }}&to={{ request.GET.to }}" 
+                       class="btn btn-outline-warning">
+                        <i class="fas fa-bus me-2"></i>Check Buses
+                    </a>
+                    <a href="{% url 'trains:train_search' %}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Search Again
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.train-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.route-line {
+    position: relative;
+    height: 2px;
+    background: #dee2e6;
+    margin: 10px 0;
+}
+
+.route-line .line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #dc3545;
+    width: 100%;
+}
+
+.route-line .fa-train {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: white;
+    padding: 2px;
+}
+
+.empty-state {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.running-days {
+    display: inline-block;
+    padding: 5px 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+@media (max-width: 768px) {
+    .route-info .d-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .route-line {
+        width: 100px;
+        height: 40px;
+        margin: 10px auto;
+        transform: rotate(90deg);
+    }
+    
+    .route-line .fa-train {
+        top: 50%;
+        right: auto;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-90deg);
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set min date for travel date
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('id_travel_date');
+    if (dateInput) {
+        dateInput.min = today;
+    }
+    
+    // Station autocomplete (simplified version)
+    const stations = [
+        'New York (NYP)', 'Los Angeles (LAX)', 'Chicago (CHI)', 
+        'Washington DC (WAS)', 'Boston (BOS)', 'Philadelphia (PHL)',
+        'Miami (MIA)', 'Seattle (SEA)', 'San Francisco (SFO)',
+        'Denver (DEN)', 'Atlanta (ATL)', 'Dallas (DFW)'
+    ];
+    
+    const fromInput = document.getElementById('id_from');
+    const toInput = document.getElementById('id_to');
+    
+    function setupAutocomplete(input) {
+        let datalist = document.createElement('datalist');
+        datalist.id = `stations_${input.id}`;
+        
+        stations.forEach(station => {
+            let option = document.createElement('option');
+            option.value = station;
+            datalist.appendChild(option);
+        });
+        
+        document.body.appendChild(datalist);
+        input.setAttribute('list', datalist.id);
+    }
+    
+    if (fromInput) setupAutocomplete(fromInput);
+    if (toInput) setupAutocomplete(toInput);
+});
+</script>
+{% endblock %}

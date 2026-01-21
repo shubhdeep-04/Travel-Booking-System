@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - TravelBook{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user-circle"></i> Profile Picture</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if user.profile_image %}
+                    <img src="{{ user.profile_image.url }}" alt="Profile" class="img-fluid rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                {% else %}
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 200px; height: 200px;">
+                        <i class="fas fa-user fa-6x text-secondary"></i>
+                    </div>
+                {% endif %}
+                
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted">Member since {{ user.date_joined|date:"F Y" }}</p>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'profile_update' %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                    <a href="{% url 'change_password' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-key"></i> Change Password
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Account Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-calendar-check me-2"></i>Total Bookings</span>
+                        <span class="badge bg-primary rounded-pill">{{ total_bookings }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-star me-2"></i>Member Since</span>
+                        <span>{{ user.date_joined|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-check-circle me-2"></i>Account Status</span>
+                        <span class="badge bg-success">Active</span>
+                    </div>
+                    {% if user.loyalty_points %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-gem me-2"></i>Loyalty Points</span>
+                        <span class="badge bg-warning">{{ user.loyalty_points }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user"></i> Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Full Name</h6>
+                        <p>{{ user.get_full_name|default:"Not provided" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Username</h6>
+                        <p>{{ user.username }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Email Address</h6>
+                        <p>{{ user.email }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Phone Number</h6>
+                        <p>{{ user.phone|default:"Not provided" }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    {% if user.date_of_birth %}
+                    <div class="col-md-6">
+                        <h6>Date of Birth</h6>
+                        <p>{{ user.date_of_birth|date:"F d, Y" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Address Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Address</h6>
+                        <p>{{ user.address|default:"Not provided"|linebreaks }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>City</h6>
+                        <p>{{ user.city|default:"Not provided" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Country</h6>
+                        <p>{{ user.country|default:"Not provided" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Postal Code</h6>
+                        <p>{{ user.postal_code|default:"Not provided" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Recent Bookings</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Service</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in recent_bookings %}
+                                <tr>
+                                    <td>{{ booking.booking_reference|truncatechars:10 }}</td>
+                                    <td>{{ booking.get_service_type_display }}</td>
+                                    <td>{{ booking.booking_date|date:"M d, Y" }}</td>
+                                    <td>${{ booking.total_amount }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if booking.status == 'CONFIRMED' %}success{% elif booking.status == 'PENDING' %}warning{% else %}danger{% endif %}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'user_dashboard' %}" class="btn btn-primary">View All Bookings</a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5>No Bookings Yet</h5>
+                        <p class="text-muted">You haven't made any bookings yet.</p>
+                        <a href="{% url 'home' %}" class="btn btn-primary">Explore Services</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

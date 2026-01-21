@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<!-- templates/bookings/booking_calendar.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booking Calendar - Travel Booking System{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<style>
+    .calendar-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .fc-toolbar-title {
+        color: #495057;
+        font-weight: 600;
+    }
+    .fc-button {
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    .fc-button:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+    }
+    .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    .fc-day-today {
+        background-color: rgba(0,123,255,0.1) !important;
+    }
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-right: 15px;
+    }
+    .legend-color {
+        width: 15px;
+        height: 15px;
+        border-radius: 3px;
+        margin-right: 5px;
+    }
+    .hotel-event { background-color: #3498db; border-color: #3498db; }
+    .car-event { background-color: #2ecc71; border-color: #2ecc71; }
+    .bus-event { background-color: #e74c3c; border-color: #e74c3c; }
+    .train-event { background-color: #f39c12; border-color: #f39c12; }
+    .booking-info-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: white;
+    }
+    .booking-info-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2 mb-0">Booking Calendar</h1>
+            <p class="text-muted">View all your bookings in calendar view</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Calendar -->
+        <div class="col-lg-8 mb-4">
+            <div class="calendar-container">
+                <div id="calendar"></div>
+            </div>
+
+            <!-- Legend -->
+            <div class="legend mt-4">
+                <div class="legend-item">
+                    <div class="legend-color hotel-event"></div>
+                    <span>Hotels</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color car-event"></div>
+                    <span>Cars</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color bus-event"></div>
+                    <span>Buses</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color train-event"></div>
+                    <span>Trains</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Bookings -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Upcoming Bookings</h5>
+                </div>
+                <div class="card-body">
+                    <div id="upcomingBookings">
+                        <!-- Will be populated by JavaScript -->
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Booking Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div id="bookingStats">
+                        <!-- Will be populated by JavaScript -->
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-info" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'hotels:hotel_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-hotel"></i> Book Hotel
+                        </a>
+                        <a href="{% url 'buses:bus_search' %}" class="btn btn-outline-warning">
+                            <i class="fas fa-bus"></i> Book Bus
+                        </a>
+                        <a href="{% url 'trains:train_search' %}" class="btn btn-outline-info">
+                            <i class="fas fa-train"></i> Book Train
+                        </a>
+                        <a href="{% url 'cars:car_list' %}" class="btn btn-outline-success">
+                            <i class="fas fa-car"></i> Book Car
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize calendar
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listMonth'
+            },
+            events: {{ bookings_json|safe }},
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                    info.jsEvent.preventDefault();
+                }
+            },
+            eventDisplay: 'block',
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                meridiem: 'short'
+            },
+            eventDidMount: function(info) {
+                // Add tooltip
+                info.el.title = info.event.title;
+            }
+        });
+        calendar.render();
+
+        // Load upcoming bookings
+        fetch('/bookings/api/stats/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update stats
+                    const statsDiv = document.getElementById('bookingStats');
+                    statsDiv.innerHTML = `
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h3 class="text-primary">${data.stats.total_bookings}</h3>
+                                <small class="text-muted">Total Bookings</small>
+                            </div>
+                            <div class="col-6">
+                                <h3 class="text-success">$${parseFloat(data.stats.total_spent).toFixed(2)}</h3>
+                                <small class="text-muted">Total Spent</small>
+                            </div>
+                        </div>
+                    `;
+
+                    // Update upcoming bookings
+                    const upcomingDiv = document.getElementById('upcomingBookings');
+                    if (data.upcoming_bookings && data.upcoming_bookings.length > 0) {
+                        let html = '';
+                        data.upcoming_bookings.slice(0, 5).forEach(booking => {
+                            html += `
+                                <div class="booking-info-card">
+                                    <h6 class="mb-1">${booking.service_name}</h6>
+                                    <p class="text-muted small mb-2">${booking.booking_reference}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge ${booking.status === 'CONFIRMED' ? 'bg-success' : 'bg-warning'}">
+                                            ${booking.status}
+                                        </span>
+                                        <a href="/bookings/${booking.id}/" class="btn btn-sm btn-outline-primary">
+                                            View
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        upcomingDiv.innerHTML = html;
+                    } else {
+                        upcomingDiv.innerHTML = `
+                            <div class="text-center py-3">
+                                <i class="fas fa-calendar-times fa-2x text-muted"></i>
+                                <p class="mt-2 mb-0">No upcoming bookings</p>
+                            </div>
+                        `;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading booking data:', error);
+            });
+    });
+</script>
+{% endblock %}

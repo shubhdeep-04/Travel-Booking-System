@@ -1,0 +1,652 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Search Hotels - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Hero Search Section -->
+    <div class="card shadow-lg border-0 mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-white p-5">
+            <h1 class="display-4 mb-3">Find Your Perfect Stay</h1>
+            <p class="lead mb-4">Search over 1,000,000 hotels worldwide</p>
+            
+            <form method="get" action="{% url 'hotels:hotel_search' %}" class="row g-3 bg-white p-4 rounded">
+                <div class="col-md-3">
+                    <label for="city" class="form-label text-dark">Destination</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </span>
+                        <input type="text" class="form-control" id="city" name="city" 
+                               value="{{ request.GET.city }}" 
+                               placeholder="City, region, or hotel name" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label for="check_in" class="form-label text-dark">Check-in</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-calendar-alt"></i>
+                        </span>
+                        <input type="date" class="form-control" id="check_in" name="check_in"
+                               value="{{ request.GET.check_in|default:'' }}" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label for="check_out" class="form-label text-dark">Check-out</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-calendar-alt"></i>
+                        </span>
+                        <input type="date" class="form-control" id="check_out" name="check_out"
+                               value="{{ request.GET.check_out|default:'' }}" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label for="guests" class="form-label text-dark">Guests</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <select class="form-select" id="guests" name="guests">
+                            <option value="1" {% if request.GET.guests == "1" %}selected{% endif %}>1 Guest</option>
+                            <option value="2" {% if request.GET.guests == "2" or not request.GET.guests %}selected{% endif %}>2 Guests</option>
+                            {% for i in "3456789"|make_list %}
+                            <option value="{{ i }}" {% if request.GET.guests == i %}selected{% endif %}>{{ i }} Guests</option>
+                            {% endfor %}
+                            <option value="10" {% if request.GET.guests == "10" %}selected{% endif %}>10+ Guests</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label for="rooms" class="form-label text-dark">Rooms</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-bed"></i>
+                        </span>
+                        <select class="form-select" id="rooms" name="rooms">
+                            {% for i in "12345"|make_list %}
+                            <option value="{{ i }}" {% if request.GET.rooms == i or i == "1" and not request.GET.rooms %}selected{% endif %}>{{ i }} Room{{ i|pluralize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 h-100">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="mb-3">Popular Filters</h5>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="?{{ request.GET.urlencode }}&amenities=wifi" 
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-wifi me-1"></i> Free WiFi
+                </a>
+                <a href="?{{ request.GET.urlencode }}&amenities=pool" 
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-swimming-pool me-1"></i> Pool
+                </a>
+                <a href="?{{ request.GET.urlencode }}&amenities=gym" 
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-dumbbell me-1"></i> Gym
+                </a>
+                <a href="?{{ request.GET.urlencode }}&amenities=parking" 
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-parking me-1"></i> Parking
+                </a>
+                <a href="?{{ request.GET.urlencode }}&star_rating=4,5" 
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-star me-1"></i> 4+ Star
+                </a>
+                <a href="?{{ request.GET.urlencode }}&min_price=100&max_price=250" 
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-dollar-sign me-1"></i> $100-$250
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    {% if hotels %}
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Advanced Filters -->
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Filter Results</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Price Range -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Price Range (per night)</h6>
+                        <div class="mb-3">
+                            <input type="range" class="form-range" min="0" max="1000" step="10" 
+                                   id="priceRange" oninput="updatePriceValue(this.value)">
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" class="form-control form-control-sm" 
+                                       placeholder="Min" id="min_price" name="min_price"
+                                       value="{{ request.GET.min_price|default:'0' }}">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control form-control-sm" 
+                                       placeholder="Max" id="max_price" name="max_price"
+                                       value="{{ request.GET.max_price|default:'1000' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Star Rating -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Star Rating</h6>
+                        {% for star in "54321"|make_list %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="star{{ star }}" name="star_rating" value="{{ star }}"
+                                   {% if star in request.GET.star_rating %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="star{{ star }}">
+                                {{ star }} ★{% if star|add:0 < 5 %} & above{% endif %}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Amenities -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Amenities</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="amenity_wifi" 
+                                   name="amenities" value="wifi"
+                                   {% if "wifi" in request.GET.amenities %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="amenity_wifi">
+                                <i class="fas fa-wifi me-2"></i>Free WiFi
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="amenity_pool" 
+                                   name="amenities" value="pool"
+                                   {% if "pool" in request.GET.amenities %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="amenity_pool">
+                                <i class="fas fa-swimming-pool me-2"></i>Swimming Pool
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="amenity_gym" 
+                                   name="amenities" value="gym"
+                                   {% if "gym" in request.GET.amenities %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="amenity_gym">
+                                <i class="fas fa-dumbbell me-2"></i>Gym
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="amenity_parking" 
+                                   name="amenities" value="parking"
+                                   {% if "parking" in request.GET.amenities %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="amenity_parking">
+                                <i class="fas fa-parking me-2"></i>Free Parking
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="amenity_spa" 
+                                   name="amenities" value="spa"
+                                   {% if "spa" in request.GET.amenities %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="amenity_spa">
+                                <i class="fas fa-spa me-2"></i>Spa
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Sort Options -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Sort By</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="sort_by" 
+                                   id="sort_recommended" value=""
+                                   {% if not request.GET.sort_by %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="sort_recommended">
+                                Recommended
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="sort_by" 
+                                   id="sort_price_low" value="price_low"
+                                   {% if request.GET.sort_by == "price_low" %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="sort_price_low">
+                                Price: Low to High
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="sort_by" 
+                                   id="sort_price_high" value="price_high"
+                                   {% if request.GET.sort_by == "price_high" %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="sort_price_high">
+                                Price: High to Low
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="sort_by" 
+                                   id="sort_rating" value="rating"
+                                   {% if request.GET.sort_by == "rating" %}checked{% endif %}
+                                   onchange="applyFilters()">
+                            <label class="form-check-label" for="sort_rating">
+                                Guest Rating
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-danger w-100" onclick="resetFilters()">
+                        <i class="fas fa-times me-2"></i> Clear All Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results List -->
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="mb-0">{{ paginator.count }} hotels in {{ request.GET.city|default:"your search" }}</h4>
+                    <p class="text-muted mb-0">
+                        {% if request.GET.check_in and request.GET.check_out %}
+                        {{ request.GET.check_in }} - {{ request.GET.check_out }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="text-muted">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </div>
+            </div>
+
+            <!-- Map View Toggle -->
+            <div class="mb-4">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary active" id="listViewBtn">
+                        <i class="fas fa-list me-2"></i> List View
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="mapViewBtn">
+                        <i class="fas fa-map me-2"></i> Map View
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hotel Results -->
+            <div id="hotelList">
+                {% for hotel in hotels %}
+                <div class="card shadow-sm mb-4">
+                    <div class="row g-0">
+                        <div class="col-md-4">
+                            {% if hotel.thumbnail %}
+                            <img src="{{ hotel.thumbnail.url }}" class="img-fluid rounded-start h-100" 
+                                 alt="{{ hotel.name }}" style="object-fit: cover; min-height: 250px;">
+                            {% else %}
+                            <div class="bg-secondary h-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-hotel fa-3x text-white-50"></i>
+                            </div>
+                            {% endif %}
+                            {% if hotel.featured %}
+                            <div class="position-absolute top-0 start-0 m-2">
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-crown me-1"></i> Featured
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body h-100 d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title mb-1">{{ hotel.name }}</h5>
+                                        <p class="card-text text-muted mb-2">
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            {{ hotel.city }}, {{ hotel.country }}
+                                        </p>
+                                        <div class="mb-2">
+                                            {% for i in "12345"|make_list %}
+                                            {% if i|add:0 <= hotel.star_rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                            {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                            {% endif %}
+                                            {% endfor %}
+                                            <span class="badge bg-success ms-2">
+                                                <i class="fas fa-star"></i> {{ hotel.avg_rating|floatformat:1 }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="mb-1">
+                                            <span class="text-muted">from</span>
+                                        </div>
+                                        <h3 class="text-primary mb-0">
+                                            ${{ hotel.rooms.first.base_price|default:"--" }}
+                                        </h3>
+                                        <small class="text-muted">per night</small>
+                                    </div>
+                                </div>
+
+                                <!-- Amenities Badges -->
+                                <div class="mb-3">
+                                    {% if hotel.has_wifi %}
+                                    <span class="badge bg-light text-dark me-1 mb-1">
+                                        <i class="fas fa-wifi"></i> WiFi
+                                    </span>
+                                    {% endif %}
+                                    {% if hotel.has_pool %}
+                                    <span class="badge bg-light text-dark me-1 mb-1">
+                                        <i class="fas fa-swimming-pool"></i> Pool
+                                    </span>
+                                    {% endif %}
+                                    {% if hotel.has_gym %}
+                                    <span class="badge bg-light text-dark me-1 mb-1">
+                                        <i class="fas fa-dumbbell"></i> Gym
+                                    </span>
+                                    {% endif %}
+                                    {% if hotel.has_parking %}
+                                    <span class="badge bg-light text-dark me-1 mb-1">
+                                        <i class="fas fa-parking"></i> Parking
+                                    </span>
+                                    {% endif %}
+                                    {% if hotel.is_pet_friendly %}
+                                    <span class="badge bg-light text-dark me-1 mb-1">
+                                        <i class="fas fa-paw"></i> Pet Friendly
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Room Info -->
+                                <div class="mt-auto">
+                                    <div class="row align-items-center">
+                                        <div class="col-8">
+                                            <p class="text-success mb-0">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                {{ hotel.available_rooms }} room{{ hotel.available_rooms|pluralize }} available
+                                            </p>
+                                            {% with hotel.rooms.all|first as room %}
+                                            {% if room %}
+                                            <small class="text-muted">
+                                                <i class="fas fa-bed me-1"></i>
+                                                {{ room.bed_count }} {{ room.bed_type }} bed{{ room.bed_count|pluralize }} • 
+                                                <i class="fas fa-users me-1"></i>
+                                                Sleeps {{ room.max_guests }}
+                                            </small>
+                                            {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            <a href="{% url 'hotels:hotel_detail' hotel.id %}" 
+                                               class="btn btn-primary">
+                                                View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Map View (Hidden by default) -->
+            <div id="hotelMap" class="d-none">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div id="map" style="height: 500px; width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Hotel search pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode|cut:'page=' }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- No Results -->
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-4x text-muted mb-4"></i>
+        <h3>No hotels found matching your criteria</h3>
+        <p class="text-muted mb-4">Try adjusting your search parameters or filters</p>
+        <a href="{% url 'hotels:hotel_search' %}" class="btn btn-primary">
+            Start New Search
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Popular Destinations -->
+{% if not hotels %}
+<div class="container py-5">
+    <h2 class="text-center mb-4">Popular Destinations</h2>
+    <div class="row">
+        {% for destination in popular_destinations %}
+        <div class="col-md-3 mb-4">
+            <div class="card destination-card shadow-sm">
+                <img src="{{ destination.image_url|default:'https://via.placeholder.com/300x200' }}" 
+                     class="card-img-top" alt="{{ destination.city }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ destination.city }}</h5>
+                    <p class="card-text text-muted">{{ destination.country }}</p>
+                    <a href="?city={{ destination.city }}" class="btn btn-outline-primary btn-sm">
+                        Search Hotels
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<style>
+.destination-card {
+    transition: transform 0.3s;
+    cursor: pointer;
+}
+
+.destination-card:hover {
+    transform: translateY(-5px);
+}
+
+/* List/Map view styles */
+#hotelMap, #hotelList {
+    transition: opacity 0.3s;
+}
+
+.btn-group .btn.active {
+    background-color: #0d6efd;
+    color: white;
+}
+</style>
+
+<script>
+// Toggle between list and map view
+document.getElementById('listViewBtn').addEventListener('click', function() {
+    document.getElementById('hotelList').classList.remove('d-none');
+    document.getElementById('hotelMap').classList.add('d-none');
+    this.classList.add('active');
+    document.getElementById('mapViewBtn').classList.remove('active');
+});
+
+document.getElementById('mapViewBtn').addEventListener('click', function() {
+    document.getElementById('hotelList').classList.add('d-none');
+    document.getElementById('hotelMap').classList.remove('d-none');
+    this.classList.add('active');
+    document.getElementById('listViewBtn').classList.remove('active');
+    initializeMap();
+});
+
+// Initialize map (sample implementation)
+function initializeMap() {
+    const mapElement = document.getElementById('map');
+    if (mapElement && !mapElement._map) {
+        // In production, you would use Leaflet or Google Maps API
+        mapElement.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
+                <h5>Map View</h5>
+                <p class="text-muted">Interactive map showing hotel locations</p>
+                <p class="text-muted">
+                    <small>
+                        In a real implementation, this would show hotels on an interactive map
+                        using Google Maps or Leaflet.js
+                    </small>
+                </p>
+            </div>
+        `;
+        mapElement._map = true;
+    }
+}
+
+// Price range slider
+function updatePriceValue(value) {
+    document.getElementById('max_price').value = value;
+}
+
+// Apply filters
+function applyFilters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Get star rating
+    const starCheckboxes = document.querySelectorAll('input[name="star_rating"]:checked');
+    if (starCheckboxes.length > 0) {
+        urlParams.set('star_rating', Array.from(starCheckboxes).map(cb => cb.value).join(','));
+    } else {
+        urlParams.delete('star_rating');
+    }
+    
+    // Get amenities
+    const amenityCheckboxes = document.querySelectorAll('input[name="amenities"]:checked');
+    if (amenityCheckboxes.length > 0) {
+        urlParams.set('amenities', Array.from(amenityCheckboxes).map(cb => cb.value).join(','));
+    } else {
+        urlParams.delete('amenities');
+    }
+    
+    // Get price range
+    const minPrice = document.getElementById('min_price').value;
+    const maxPrice = document.getElementById('max_price').value;
+    if (minPrice) urlParams.set('min_price', minPrice);
+    else urlParams.delete('min_price');
+    if (maxPrice) urlParams.set('max_price', maxPrice);
+    else urlParams.delete('max_price');
+    
+    // Get sort by
+    const sortBy = document.querySelector('input[name="sort_by"]:checked');
+    if (sortBy && sortBy.value) {
+        urlParams.set('sort_by', sortBy.value);
+    } else {
+        urlParams.delete('sort_by');
+    }
+    
+    window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+}
+
+// Reset all filters
+function resetFilters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Keep only essential parameters
+    const essentialParams = ['city', 'check_in', 'check_out', 'guests', 'rooms'];
+    const newParams = new URLSearchParams();
+    
+    for (const key of essentialParams) {
+        if (urlParams.has(key)) {
+            newParams.set(key, urlParams.get(key));
+        }
+    }
+    
+    window.location.href = `${window.location.pathname}?${newParams.toString()}`;
+}
+
+// Set min dates for check-in/check-out
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const checkInInput = document.getElementById('check_in');
+    const checkOutInput = document.getElementById('check_out');
+    
+    if (checkInInput) {
+        checkInInput.min = today;
+        if (!checkInInput.value) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            checkInInput.value = tomorrow.toISOString().split('T')[0];
+        }
+    }
+    
+    if (checkOutInput) {
+        if (checkInInput && checkInInput.value) {
+            const checkInDate = new Date(checkInInput.value);
+            const nextDay = new Date(checkInDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            checkOutInput.min = nextDay.toISOString().split('T')[0];
+            
+            if (!checkOutInput.value) {
+                nextDay.setDate(nextDay.getDate() + 1);
+                checkOutInput.value = nextDay.toISOString().split('T')[0];
+            }
+        } else {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 2);
+            checkOutInput.min = tomorrow.toISOString().split('T')[0];
+        }
+    }
+    
+    // Initialize price range slider
+    const priceRange = document.getElementById('priceRange');
+    const maxPriceInput = document.getElementById('max_price');
+    if (priceRange && maxPriceInput) {
+        priceRange.value = maxPriceInput.value || 1000;
+    }
+});
+</script>
+{% endblock %}

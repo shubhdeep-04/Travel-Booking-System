@@ -1,0 +1,669 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ car.brand.name }} {{ car.model }} - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'cars:car_list' %}">Cars</a></li>
+            <li class="breadcrumb-item"><a href="#">{{ car.city }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ car.brand.name }} {{ car.model }}</li>
+        </ol>
+    </nav>
+
+    <!-- Car Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-1">{{ car.brand.name }} {{ car.model }}</h1>
+            <div class="d-flex align-items-center mb-3">
+                <span class="badge bg-light text-dark me-2">{{ car.category.name }}</span>
+                <span class="badge bg-light text-dark me-2">{{ car.year }}</span>
+                <span class="badge bg-light text-dark me-2">{{ car.get_transmission_display }}</span>
+                <span class="badge bg-light text-dark">{{ car.get_fuel_type_display }}</span>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="d-flex justify-content-end align-items-center">
+                <div class="me-4">
+                    <h3 class="text-danger mb-0">${{ car.daily_rate }}</h3>
+                    <small class="text-muted">per day</small>
+                </div>
+                {% if user.is_authenticated %}
+                <a href="{% url 'cars:car_booking' car.id %}" class="btn btn-danger btn-lg">
+                    Book Now
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}?next={% url 'cars:car_booking' car.id %}" 
+                   class="btn btn-danger btn-lg">
+                    Login to Book
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Car Images -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="row g-0">
+                        <div class="col-md-8">
+                            {% with car.images.all|first as main_image %}
+                            {% if main_image %}
+                            <img src="{{ main_image.image.url }}" class="img-fluid w-100" 
+                                 alt="{{ car.brand.name }} {{ car.model }}" 
+                                 style="height: 400px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-secondary w-100 d-flex align-items-center justify-content-center"
+                                 style="height: 400px;">
+                                <i class="fas fa-car fa-5x text-white-50"></i>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="row g-0 h-100">
+                                {% for image in car.images.all|slice:"1:5" %}
+                                <div class="col-6">
+                                    <img src="{{ image.image.url }}" class="img-fluid w-100 h-50" 
+                                         alt="{{ image.caption }}" style="object-fit: cover;">
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column - Details -->
+        <div class="col-md-8">
+            <!-- Specifications -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Specifications</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Brand</small>
+                                    <p class="mb-0"><strong>{{ car.brand.name }}</strong></p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Model</small>
+                                    <p class="mb-0"><strong>{{ car.model }}</strong></p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Year</small>
+                                    <p class="mb-0"><strong>{{ car.year }}</strong></p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Color</small>
+                                    <p class="mb-0"><strong>{{ car.color }}</strong></p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Transmission</small>
+                                    <p class="mb-0"><strong>{{ car.get_transmission_display }}</strong></p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Fuel Type</small>
+                                    <p class="mb-0"><strong>{{ car.get_fuel_type_display }}</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Seating Capacity</small>
+                                    <p class="mb-0">
+                                        <strong>
+                                            <i class="fas fa-users me-1"></i> {{ car.seating_capacity }}
+                                        </strong>
+                                    </p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Baggage Capacity</small>
+                                    <p class="mb-0">
+                                        <strong>
+                                            <i class="fas fa-suitcase me-1"></i> {{ car.baggage_capacity }} bags
+                                        </strong>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Engine Capacity</small>
+                                    <p class="mb-0"><strong>{{ car.engine_capacity|default:"--" }} cc</strong></p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Mileage</small>
+                                    <p class="mb-0"><strong>{{ car.mileage_kmpl|default:"--" }} kmpl</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Features & Amenities</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if car.has_ac %}
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-snowflake fa-lg text-danger me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Air Conditioning</h6>
+                                    <small class="text-muted">Climate control system</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if car.has_bluetooth %}
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-bluetooth fa-lg text-danger me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Bluetooth</h6>
+                                    <small class="text-muted">Hands-free calling & audio</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if car.has_gps %}
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-map-marked-alt fa-lg text-danger me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">GPS Navigation</h6>
+                                    <small class="text-muted">Turn-by-turn directions</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if car.has_usb %}
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-usb fa-lg text-danger me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">USB Ports</h6>
+                                    <small class="text-muted">Device charging ports</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if car.is_airbag_available %}
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-shield-alt fa-lg text-danger me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Airbags</h6>
+                                    <small class="text-muted">Front & side airbags</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if car.has_child_seat %}
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-baby fa-lg text-danger me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Child Seat</h6>
+                                    <small class="text-muted">Available on request</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rental Information -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Rental Information</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>Pricing</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Daily Rate:</span>
+                                    <strong>${{ car.daily_rate }}</strong>
+                                </div>
+                                {% if car.weekly_rate %}
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Weekly Rate (7 days):</span>
+                                    <strong>${{ car.weekly_rate }} 
+                                        <small class="text-success">(Save {{ car.weekly_discount }}%)</small>
+                                    </strong>
+                                </div>
+                                {% endif %}
+                                {% if car.monthly_rate %}
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Monthly Rate (30 days):</span>
+                                    <strong>${{ car.monthly_rate }}
+                                        <small class="text-success">(Save {{ car.monthly_discount }}%)</small>
+                                    </strong>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>Additional Charges</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Security Deposit:</span>
+                                    <strong>${{ car.security_deposit }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>KM Limit per Day:</span>
+                                    <strong>{{ car.km_limit_per_day }} km</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Extra KM Charge:</span>
+                                    <strong>${{ car.extra_km_charge }}/km</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">Customer Reviews</h4>
+                        <a href="#" class="btn btn-outline-danger">Write a Review</a>
+                    </div>
+                    
+                    <!-- Overall Rating -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 text-center">
+                            <h1 class="display-4 text-danger">4.5</h1>
+                            <div class="mb-2">
+                                {% for i in "12345"|make_list %}
+                                {% if i|add:0 <= 4.5 %}
+                                <i class="fas fa-star text-warning"></i>
+                                {% else %}
+                                <i class="far fa-star text-warning"></i>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted">24 reviews</p>
+                        </div>
+                        <div class="col-md-9">
+                            {% for i in "54321"|make_list reversed %}
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="me-2">{{ i }}★</span>
+                                <div class="progress flex-grow-1" style="height: 10px;">
+                                    <div class="progress-bar bg-warning" 
+                                         style="width: {% widthratio i|add:0 5 100 %}%"></div>
+                                </div>
+                                <span class="ms-2">{% widthratio i|add:0 5 100 %}%</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Review List -->
+                    {% for review in reviews %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-0">{{ review.user.get_full_name|default:review.user.username }}</h6>
+                                <small class="text-muted">{{ review.created_at|date:"F d, Y" }}</small>
+                            </div>
+                            <div>
+                                {% for i in "12345"|make_list %}
+                                {% if i|add:0 <= review.rating %}
+                                <i class="fas fa-star text-warning"></i>
+                                {% else %}
+                                <i class="far fa-star text-warning"></i>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <h6 class="mb-2">{{ review.title }}</h6>
+                        <p class="mb-2">{{ review.comment|truncatechars:200 }}</p>
+                        {% if review.is_verified %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check"></i> Verified Rental
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No reviews yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Booking Widget -->
+        <div class="col-md-4">
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Book This Car</h4>
+                    <form method="get" action="{% url 'cars:car_booking' car.id %}">
+                        <div class="mb-3">
+                            <label for="pickup_location" class="form-label">Pick-up Location</label>
+                            <input type="text" class="form-control" id="pickup_location" 
+                                   value="{{ car.pickup_location }}" readonly>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="pickup_date" class="form-label">Pick-up Date</label>
+                                <input type="date" class="form-control" id="pickup_date" name="pickup_date" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="pickup_time" class="form-label">Time</label>
+                                <select class="form-select" id="pickup_time" name="pickup_time">
+                                    {% for hour in "678910111213141516171819202122"|make_list %}
+                                    <option value="{{ hour|add:0 }}:00">{{ hour|add:0 }}:00</option>
+                                    <option value="{{ hour|add:0 }}:30">{{ hour|add:0 }}:30</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="dropoff_date" class="form-label">Drop-off Date</label>
+                                <input type="date" class="form-control" id="dropoff_date" name="dropoff_date" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="dropoff_time" class="form-label">Time</label>
+                                <select class="form-select" id="dropoff_time" name="dropoff_time">
+                                    {% for hour in "678910111213141516171819202122"|make_list %}
+                                    <option value="{{ hour|add:0 }}:00">{{ hour|add:0 }}:00</option>
+                                    <option value="{{ hour|add:0 }}:30">{{ hour|add:0 }}:30</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Driver Information -->
+                        <div class="mb-3">
+                            <label for="driver_age" class="form-label">Driver's Age</label>
+                            <select class="form-select" id="driver_age" name="driver_age">
+                                {% for age in "182122232425263034354045505560"|make_list %}
+                                <option value="{{ age|add:0 }}" {% if age|add:0 == 25 %}selected{% endif %}>{{ age|add:0 }} years</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="mb-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="insurance" name="insurance" checked>
+                                <label class="form-check-label" for="insurance">
+                                    <strong>Add Insurance</strong>
+                                    <small class="text-muted d-block">+ $15/day • Full coverage protection</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="extra_driver" name="extra_driver">
+                                <label class="form-check-label" for="extra_driver">
+                                    <strong>Add Extra Driver</strong>
+                                    <small class="text-muted d-block">+ $5/day • Share driving</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Price Summary -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">Price Summary</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Car Rental (3 days)</span>
+                                    <span>${{ car.daily_rate|multiply:3 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Insurance (3 days)</span>
+                                    <span>$45.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Taxes & Fees</span>
+                                    <span>$30.00</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="mb-0">Total</h6>
+                                    <h6 class="mb-0 text-danger">${{ car.daily_rate|multiply:3|add:75 }}</h6>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if user.is_authenticated %}
+                        <button type="submit" class="btn btn-danger w-100 btn-lg">
+                            Continue to Book
+                        </button>
+                        {% else %}
+                        <a href="{% url 'login' %}?next={% url 'cars:car_booking' car.id %}" 
+                           class="btn btn-danger w-100 btn-lg">
+                            Login to Book
+                        </a>
+                        {% endif %}
+                        
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                Free cancellation until 24 hours before pick-up
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Location Info -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-map-marker-alt text-danger me-2"></i> Pick-up Location
+                    </h5>
+                    <p class="card-text mb-2">
+                        <strong>{{ car.pickup_location }}</strong><br>
+                        {{ car.city }}, {{ car.state }}, {{ car.country }}
+                    </p>
+                    {% if car.latitude and car.longitude %}
+                    <div id="map" style="height: 200px; width: 100%;" class="rounded mb-3"></div>
+                    {% endif %}
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Present your ID and driving license at pick-up
+                    </small>
+                </div>
+            </div>
+
+            <!-- Similar Cars -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Similar Cars</h5>
+                    {% for similar_car in similar_cars %}
+                    <div class="d-flex align-items-start mb-3">
+                        {% if similar_car.thumbnail %}
+                        <img src="{{ similar_car.thumbnail.url }}" class="rounded me-3" 
+                             alt="{{ similar_car.brand.name }} {{ similar_car.model }}" 
+                             style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                        <div class="rounded bg-secondary me-3 d-flex align-items-center justify-content-center"
+                             style="width: 60px; height: 60px;">
+                            <i class="fas fa-car text-white-50"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-0">{{ similar_car.brand.name }} {{ similar_car.model }}</h6>
+                            <small class="text-muted">{{ similar_car.category.name }}</small>
+                            <div class="mt-1">
+                                <span class="text-danger fw-bold">${{ similar_car.daily_rate }}</span>
+                                <small class="text-muted">/day</small>
+                            </div>
+                            <a href="{% url 'cars:car_detail' similar_car.id %}" class="btn btn-sm btn-outline-danger mt-1">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Terms -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rental Terms & Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Driver Requirements</h6>
+                <p>Driver must be at least 21 years old with a valid driving license held for at least 2 years.</p>
+                
+                <h6 class="mt-3">Insurance Coverage</h6>
+                <p>Basic insurance is included. Additional coverage options are available for purchase.</p>
+                
+                <h6 class="mt-3">Fuel Policy</h6>
+                <p>Car must be returned with the same fuel level as at pick-up. Refueling charges apply if returned with less fuel.</p>
+                
+                <h6 class="mt-3">Cancellation Policy</h6>
+                <p>Free cancellation until 24 hours before pick-up. Late cancellations incur a fee.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom styles for car detail page */
+#map {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+</style>
+
+<script>
+// Set min dates for pick-up/drop-off
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const pickupInput = document.getElementById('pickup_date');
+    const dropoffInput = document.getElementById('dropoff_date');
+    
+    if (pickupInput) {
+        pickupInput.min = today;
+        if (!pickupInput.value) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            pickupInput.value = tomorrow.toISOString().split('T')[0];
+        }
+    }
+    
+    if (dropoffInput && pickupInput && pickupInput.value) {
+        const pickupDate = new Date(pickupInput.value);
+        const nextDay = new Date(pickupDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        dropoffInput.min = nextDay.toISOString().split('T')[0];
+        
+        if (!dropoffInput.value) {
+            nextDay.setDate(nextDay.getDate() + 2);
+            dropoffInput.value = nextDay.toISOString().split('T')[0];
+        }
+    }
+    
+    // Initialize map (if coordinates available)
+    {% if car.latitude and car.longitude %}
+    initializeMap({{ car.latitude }}, {{ car.longitude }}, "{{ car.pickup_location }}");
+    {% endif %}
+});
+
+function initializeMap(lat, lng, title) {
+    const mapElement = document.getElementById('map');
+    if (mapElement) {
+        // In production, use Leaflet or Google Maps API
+        mapElement.innerHTML = `
+            <div class="h-100 d-flex flex-column align-items-center justify-content-center">
+                <i class="fas fa-map-marked-alt fa-3x text-danger mb-3"></i>
+                <h6>${title}</h6>
+                <small class="text-muted">
+                    Latitude: ${lat}, Longitude: ${lng}
+                </small>
+                <small class="text-muted mt-2">
+                    <i class="fas fa-info-circle"></i> Interactive map would appear here
+                </small>
+            </div>
+        `;
+    }
+}
+
+// Calculate rental price
+function calculatePrice() {
+    const pickupDate = new Date(document.getElementById('pickup_date').value);
+    const dropoffDate = new Date(document.getElementById('dropoff_date').value);
+    const dailyRate = {{ car.daily_rate }};
+    
+    if (pickupDate && dropoffDate) {
+        const diffTime = Math.abs(dropoffDate - pickupDate);
+        const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Calculate base price
+        let basePrice = dailyRate * days;
+        
+        // Apply weekly/monthly discounts
+        if (days >= 30 && {{ car.monthly_rate|default:"0" }} > 0) {
+            basePrice = {{ car.monthly_rate }} * Math.floor(days / 30);
+            const remainingDays = days % 30;
+            if (remainingDays >= 7 && {{ car.weekly_rate|default:"0" }} > 0) {
+                basePrice += {{ car.weekly_rate }} * Math.floor(remainingDays / 7);
+                basePrice += dailyRate * (remainingDays % 7);
+            } else {
+                basePrice += dailyRate * remainingDays;
+            }
+        } else if (days >= 7 && {{ car.weekly_rate|default:"0" }} > 0) {
+            basePrice = {{ car.weekly_rate }} * Math.floor(days / 7);
+            basePrice += dailyRate * (days % 7);
+        }
+        
+        // Add insurance if selected
+        const insurance = document.getElementById('insurance').checked;
+        const insuranceCost = insurance ? 15 * days : 0;
+        
+        // Add extra driver if selected
+        const extraDriver = document.getElementById('extra_driver').checked;
+        const extraDriverCost = extraDriver ? 5 * days : 0;
+        
+        // Calculate taxes (10%)
+        const tax = (basePrice + insuranceCost + extraDriverCost) * 0.1;
+        
+        const total = basePrice + insuranceCost + extraDriverCost + tax;
+        
+        // Update price display (you would update the price summary here)
+        console.log('Total price:', total);
+    }
+}
+
+// Add event listeners for price calculation
+['pickup_date', 'dropoff_date', 'insurance', 'extra_driver'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+        element.addEventListener('change', calculatePrice);
+    }
+});
+</script>
+
+{% load custom_filters %}
+{% endblock %}

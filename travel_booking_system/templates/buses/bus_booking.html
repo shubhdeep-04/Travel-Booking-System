@@ -1,0 +1,617 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Book Bus - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Progress Steps -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="progress-steps">
+                <div class="step completed">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Bus Selection</div>
+                </div>
+                <div class="step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Passenger Details</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Payment</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Confirmation</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Booking Form -->
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-white">
+                    <h4 class="mb-0">Passenger Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Hidden Bus ID -->
+                        <input type="hidden" name="bus_id" value="{{ bus.id }}">
+
+                        <!-- Journey Details -->
+                        <div class="journey-summary mb-4 p-3 bg-light rounded">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Journey Details</h6>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Route:</small>
+                                        <div class="fw-bold">{{ bus.route_from }} → {{ bus.route_to }}</div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Bus:</small>
+                                        <div class="fw-bold">{{ bus.operator.name }} - {{ bus.bus_number }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Schedule</h6>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Date:</small>
+                                        <div class="fw-bold">{{ travel_date }}</div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Time:</small>
+                                        <div class="fw-bold">{{ bus.departure_time|time:"h:i A" }} - {{ bus.arrival_time|time:"h:i A" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Passenger Information -->
+                        <h5 class="mb-3">Passenger Information</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.passenger_name.id_for_label }}" class="form-label">
+                                    Full Name *
+                                </label>
+                                <input type="text" class="form-control {% if form.passenger_name.errors %}is-invalid{% endif %}"
+                                       id="{{ form.passenger_name.id_for_label }}" 
+                                       name="{{ form.passenger_name.name }}"
+                                       value="{{ form.passenger_name.value|default:user.get_full_name|default:'' }}"
+                                       required>
+                                {% if form.passenger_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.passenger_name.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.passenger_age.id_for_label }}" class="form-label">
+                                    Age *
+                                </label>
+                                <input type="number" class="form-control {% if form.passenger_age.errors %}is-invalid{% endif %}"
+                                       id="{{ form.passenger_age.id_for_label }}"
+                                       name="{{ form.passenger_age.name }}"
+                                       value="{{ form.passenger_age.value|default:'' }}"
+                                       min="1" max="120" required>
+                                {% if form.passenger_age.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.passenger_age.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.passenger_gender.id_for_label }}" class="form-label">
+                                    Gender *
+                                </label>
+                                <select class="form-select {% if form.passenger_gender.errors %}is-invalid{% endif %}"
+                                        id="{{ form.passenger_gender.id_for_label }}"
+                                        name="{{ form.passenger_gender.name }}" required>
+                                    <option value="">Select</option>
+                                    <option value="MALE" {% if form.passenger_gender.value == 'MALE' %}selected{% endif %}>Male</option>
+                                    <option value="FEMALE" {% if form.passenger_gender.value == 'FEMALE' %}selected{% endif %}>Female</option>
+                                    <option value="OTHER" {% if form.passenger_gender.value == 'OTHER' %}selected{% endif %}>Other</option>
+                                </select>
+                                {% if form.passenger_gender.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.passenger_gender.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.passenger_phone.id_for_label }}" class="form-label">
+                                    Phone Number *
+                                </label>
+                                <input type="tel" class="form-control {% if form.passenger_phone.errors %}is-invalid{% endif %}"
+                                       id="{{ form.passenger_phone.id_for_label }}"
+                                       name="{{ form.passenger_phone.name }}"
+                                       value="{{ form.passenger_phone.value|default:'' }}"
+                                       required>
+                                {% if form.passenger_phone.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.passenger_phone.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.passenger_email.id_for_label }}" class="form-label">
+                                    Email Address
+                                </label>
+                                <input type="email" class="form-control {% if form.passenger_email.errors %}is-invalid{% endif %}"
+                                       id="{{ form.passenger_email.id_for_label }}"
+                                       name="{{ form.passenger_email.name }}"
+                                       value="{{ form.passenger_email.value|default:user.email|default:'' }}">
+                                {% if form.passenger_email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.passenger_email.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Boarding & Dropping Points -->
+                        <h5 class="mb-3">Boarding & Dropping Points</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.boarding_point.id_for_label }}" class="form-label">
+                                    Boarding Point *
+                                </label>
+                                <select class="form-select {% if form.boarding_point.errors %}is-invalid{% endif %}"
+                                        id="{{ form.boarding_point.id_for_label }}"
+                                        name="{{ form.boarding_point.name }}" required>
+                                    <option value="">Select Boarding Point</option>
+                                    {% for stop in stops %}
+                                    <option value="{{ stop.stop_name }}" {% if form.boarding_point.value == stop.stop_name %}selected{% endif %}>
+                                        {{ stop.stop_name }}, {{ stop.city }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.boarding_point.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.boarding_point.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.dropping_point.id_for_label }}" class="form-label">
+                                    Dropping Point *
+                                </label>
+                                <select class="form-select {% if form.dropping_point.errors %}is-invalid{% endif %}"
+                                        id="{{ form.dropping_point.id_for_label }}"
+                                        name="{{ form.dropping_point.name }}" required>
+                                    <option value="">Select Dropping Point</option>
+                                    {% for stop in stops %}
+                                    <option value="{{ stop.stop_name }}" {% if form.dropping_point.value == stop.stop_name %}selected{% endif %}>
+                                        {{ stop.stop_name }}, {{ stop.city }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.dropping_point.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.dropping_point.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Special Requests -->
+                        <h5 class="mb-3">Special Requests</h5>
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="{{ form.special_requests.id_for_label }}" class="form-label">
+                                    Any Special Requirements
+                                </label>
+                                <textarea class="form-control {% if form.special_requests.errors %}is-invalid{% endif %}"
+                                          id="{{ form.special_requests.id_for_label }}"
+                                          name="{{ form.special_requests.name }}"
+                                          rows="3"
+                                          placeholder="e.g., Wheelchair assistance, dietary requirements, etc.">{{ form.special_requests.value|default:'' }}</textarea>
+                                {% if form.special_requests.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.special_requests.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Terms & Conditions -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input {% if form.terms_accepted.errors %}is-invalid{% endif %}" 
+                                   type="checkbox" 
+                                   id="terms_accepted" 
+                                   name="terms_accepted" 
+                                   required>
+                            <label class="form-check-label" for="terms_accepted">
+                                I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms & Conditions</a> and 
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#cancellationModal">Cancellation Policy</a> *
+                            </label>
+                            {% if form.terms_accepted.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.terms_accepted.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-ticket-alt me-2"></i>Proceed to Payment
+                            </button>
+                            <a href="{% url 'buses:bus_detail' bus.id %}?travel_date={{ travel_date }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Bus Details
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Fare Summary -->
+        <div class="col-md-4">
+            <div class="sticky-top" style="top: 20px;">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Fare Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Selected Seats -->
+                        <div class="selected-seats mb-4">
+                            <h6>Selected Seats</h6>
+                            <div id="selectedSeatsDisplay" class="mt-2">
+                                {% if request.GET.seats %}
+                                {% with seats=request.GET.seats|split:"," %}
+                                {% for seat in seats %}
+                                <span class="badge bg-warning me-1 mb-1">{{ seat }}</span>
+                                {% endfor %}
+                                {% endwith %}
+                                {% else %}
+                                <p class="text-muted small">No seats selected</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Fare Breakdown -->
+                        <div class="fare-breakdown mb-4">
+                            <h6>Fare Details</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Base Fare (x{{ request.GET.seats|split:","|length|default:1 }}):</td>
+                                        <td class="text-end">${{ bus.base_fare|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tax ({{ bus.tax_percentage }}%):</td>
+                                        <td class="text-end">${{ bus.tax_amount|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Service Charge:</td>
+                                        <td class="text-end">$2.00</td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <td><strong>Total Amount:</strong></td>
+                                        <td class="text-end">
+                                            <strong class="h5">${{ total_fare|floatformat:2 }}</strong>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Important Information -->
+                        <div class="important-info">
+                            <h6><i class="fas fa-info-circle text-info me-2"></i>Important</h6>
+                            <ul class="list-unstyled small">
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    Please arrive at boarding point 30 minutes before departure
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    Carry valid photo ID for verification
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    E-ticket will be sent to your email
+                                </li>
+                                <li>
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    Free cancellation upto 4 hours before departure
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Support -->
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body text-center">
+                        <h6>Need Help?</h6>
+                        <p class="small text-muted mb-2">Our support team is here to help</p>
+                        <a href="tel:+18001234567" class="btn btn-outline-primary btn-sm mb-2">
+                            <i class="fas fa-phone me-1"></i>Call: 1-800-123-4567
+                        </a>
+                        <br>
+                        <a href="mailto:support@travelbooking.com" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-envelope me-1"></i>Email Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms & Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms & Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Booking Terms</h6>
+                <ol>
+                    <li>All bookings are subject to availability at the time of confirmation.</li>
+                    <li>Passengers must carry valid photo ID proof for verification.</li>
+                    <li>Children below 5 years travel free (without seat).</li>
+                    <li>Luggage allowance: 15kg per passenger.</li>
+                    <li>Smoking and consumption of alcohol is strictly prohibited.</li>
+                </ol>
+                
+                <h6 class="mt-4">Cancellation Policy</h6>
+                <ul>
+                    <li>Free cancellation up to 4 hours before departure time.</li>
+                    <li>Cancellation within 4 hours of departure: 50% refund.</li>
+                    <li>No refund for no-shows or missed buses.</li>
+                    <li>Refunds will be processed within 7-10 business days.</li>
+                </ul>
+                
+                <h6 class="mt-4">COVID-19 Guidelines</h6>
+                <p>Masks are recommended but not mandatory. Please maintain social distancing where possible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancellation Policy Modal -->
+<div class="modal fade" id="cancellationModal" tabindex="-1" aria-labelledby="cancellationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancellationModalLabel">Cancellation Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="cancellation-chart">
+                    <table class="table table-bordered">
+                        <thead class="table-warning">
+                            <tr>
+                                <th>Time Before Departure</th>
+                                <th>Cancellation Charge</th>
+                                <th>Refund Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>More than 4 hours</td>
+                                <td>0%</td>
+                                <td>100%</td>
+                            </tr>
+                            <tr>
+                                <td>1-4 hours</td>
+                                <td>50%</td>
+                                <td>50%</td>
+                            </tr>
+                            <tr>
+                                <td>Less than 1 hour</td>
+                                <td>100%</td>
+                                <td>0%</td>
+                            </tr>
+                            <tr>
+                                <td>No Show</td>
+                                <td>100%</td>
+                                <td>0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="small text-muted">
+                    *All cancellation times are based on scheduled departure time.<br>
+                    *Refunds are processed to the original payment method.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #dee2e6;
+    z-index: 1;
+}
+
+.step {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+}
+
+.step-number {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    border-radius: 50%;
+    background: #dee2e6;
+    color: #666;
+    margin: 0 auto 5px;
+    font-weight: 600;
+}
+
+.step.completed .step-number {
+    background: #198754;
+    color: white;
+}
+
+.step.active .step-number {
+    background: #ffc107;
+    color: #000;
+    box-shadow: 0 0 0 5px rgba(255, 193, 7, 0.2);
+}
+
+.step-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.step.completed .step-label,
+.step.active .step-label {
+    color: #333;
+    font-weight: 500;
+}
+
+.journey-summary {
+    border-left: 4px solid #ffc107;
+}
+
+.selected-seats .badge {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+}
+
+.fare-breakdown table td {
+    padding: 8px 0;
+    border-color: #dee2e6;
+}
+
+.important-info ul li {
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.important-info ul li i {
+    position: absolute;
+    left: 0;
+    top: 2px;
+}
+
+.cancellation-chart table {
+    font-size: 0.9rem;
+}
+
+.cancellation-chart table th {
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .progress-steps {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+    }
+    
+    .progress-steps::before {
+        display: none;
+    }
+    
+    .step {
+        flex: 0 0 calc(50% - 20px);
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate total fare based on selected seats
+    function calculateTotalFare() {
+        const baseFare = {{ bus.base_fare }};
+        const taxPercentage = {{ bus.tax_percentage }};
+        const serviceCharge = 2.00;
+        
+        // Get number of selected seats from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const seatsParam = urlParams.get('seats');
+        const seatCount = seatsParam ? seatsParam.split(',').length : 1;
+        
+        const taxAmount = (baseFare * taxPercentage) / 100;
+        const totalPerSeat = baseFare + taxAmount + serviceCharge;
+        const totalFare = totalPerSeat * seatCount;
+        
+        return {
+            seatCount: seatCount,
+            baseFare: baseFare,
+            taxAmount: taxAmount,
+            serviceCharge: serviceCharge,
+            totalFare: totalFare
+        };
+    }
+    
+    // Update fare display
+    const fareDetails = calculateTotalFare();
+    document.querySelector('strong.h5').textContent = `$${fareDetails.totalFare.toFixed(2)}`;
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const termsCheckbox = document.getElementById('terms_accepted');
+        if (!termsCheckbox.checked) {
+            e.preventDefault();
+            alert('Please accept the Terms & Conditions to proceed.');
+            termsCheckbox.focus();
+            return false;
+        }
+        
+        // Additional validation can be added here
+        return true;
+    });
+});
+</script>
+{% endblock %}

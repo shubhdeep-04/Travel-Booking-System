@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Hotels - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Search Bar -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <form method="get" action="{% url 'hotels:hotel_search' %}" class="row g-3">
+                <div class="col-md-3">
+                    <label for="city" class="form-label">City</label>
+                    <input type="text" class="form-control" id="city" name="city" 
+                           value="{{ request.GET.city }}" placeholder="Where do you want to go?">
+                </div>
+                <div class="col-md-2">
+                    <label for="check_in" class="form-label">Check-in</label>
+                    <input type="date" class="form-control" id="check_in" name="check_in"
+                           value="{{ request.GET.check_in|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="check_out" class="form-label">Check-out</label>
+                    <input type="date" class="form-control" id="check_out" name="check_out"
+                           value="{{ request.GET.check_out|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="guests" class="form-label">Guests</label>
+                    <select class="form-select" id="guests" name="guests">
+                        {% for i in "123456789"|make_list %}
+                        <option value="{{ i }}" {% if request.GET.guests == i %}selected{% endif %}>{{ i }} Guest{{ i|pluralize }}</option>
+                        {% endfor %}
+                        <option value="10" {% if request.GET.guests == "10" %}selected{% endif %}>10+ Guests</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="rooms" class="form-label">Rooms</label>
+                    <select class="form-select" id="rooms" name="rooms">
+                        {% for i in "12345"|make_list %}
+                        <option value="{{ i }}" {% if request.GET.rooms == i %}selected{% endif %}>{{ i }} Room{{ i|pluralize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Hotels in {% if city %}{{ city }}{% else %}Popular Destinations{% endif %}</h2>
+            <p class="text-muted">{{ hotels|length }} hotels found</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                    Sort by: {% if request.GET.sort_by == 'price_low' %}Price: Low to High
+                            {% elif request.GET.sort_by == 'price_high' %}Price: High to Low
+                            {% elif request.GET.sort_by == 'rating' %}Rating
+                            {% elif request.GET.sort_by == 'star' %}Star Rating
+                            {% else %}Recommended{% endif %}
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=">Recommended</a></li>
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=price_low">Price: Low to High</a></li>
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=price_high">Price: High to Low</a></li>
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=rating">Rating</a></li>
+                    <li><a class="dropdown-item" href="?{{ request.GET.urlencode }}&sort_by=star">Star Rating</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Sidebar -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Star Rating -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Star Rating</h6>
+                        {% for star in "54321"|make_list %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="star{{ star }}" name="star_rating" value="{{ star }}"
+                                   {% if star in request.GET.star_rating %}checked{% endif %}>
+                            <label class="form-check-label" for="star{{ star }}">
+                                {{ star }} ★{% if star|add:0 < 5 %} & above{% endif %}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Price Range -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Price Range (per night)</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" class="form-control form-control-sm" 
+                                       placeholder="Min" id="min_price" name="min_price"
+                                       value="{{ request.GET.min_price|default:'' }}">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control form-control-sm" 
+                                       placeholder="Max" id="max_price" name="max_price"
+                                       value="{{ request.GET.max_price|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Amenities -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Amenities</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="wifi" name="amenities" value="wifi"
+                                   {% if "wifi" in request.GET.amenities %}checked{% endif %}>
+                            <label class="form-check-label" for="wifi">
+                                <i class="fas fa-wifi me-2"></i>Free WiFi
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="pool" name="amenities" value="pool"
+                                   {% if "pool" in request.GET.amenities %}checked{% endif %}>
+                            <label class="form-check-label" for="pool">
+                                <i class="fas fa-swimming-pool me-2"></i>Swimming Pool
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="gym" name="amenities" value="gym"
+                                   {% if "gym" in request.GET.amenities %}checked{% endif %}>
+                            <label class="form-check-label" for="gym">
+                                <i class="fas fa-dumbbell me-2"></i>Gym
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="parking" name="amenities" value="parking"
+                                   {% if "parking" in request.GET.amenities %}checked{% endif %}>
+                            <label class="form-check-label" for="parking">
+                                <i class="fas fa-parking me-2"></i>Free Parking
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hotel List -->
+        <div class="col-md-9">
+            {% if hotels %}
+            <div class="row">
+                {% for hotel in hotels %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card hotel-card h-100 shadow-sm">
+                        {% if hotel.thumbnail %}
+                        <img src="{{ hotel.thumbnail.url }}" class="card-img-top" alt="{{ hotel.name }}" 
+                             style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-secondary" style="height: 200px;"></div>
+                        {% endif %}
+                        
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title mb-1">{{ hotel.name }}</h5>
+                                    <p class="card-text text-muted mb-2">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        {{ hotel.city }}, {{ hotel.country }}
+                                    </p>
+                                </div>
+                                <div class="text-end">
+                                    <div class="mb-1">
+                                        {% for i in "12345"|make_list %}
+                                        {% if i|add:0 <= hotel.star_rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                        <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-star"></i> {{ hotel.avg_rating|floatformat:1 }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                {% if hotel.has_wifi %}
+                                <span class="badge bg-light text-dark me-1 mb-1">
+                                    <i class="fas fa-wifi"></i> WiFi
+                                </span>
+                                {% endif %}
+                                {% if hotel.has_pool %}
+                                <span class="badge bg-light text-dark me-1 mb-1">
+                                    <i class="fas fa-swimming-pool"></i> Pool
+                                </span>
+                                {% endif %}
+                                {% if hotel.has_gym %}
+                                <span class="badge bg-light text-dark me-1 mb-1">
+                                    <i class="fas fa-dumbbell"></i> Gym
+                                </span>
+                                {% endif %}
+                                {% if hotel.has_parking %}
+                                <span class="badge bg-light text-dark me-1 mb-1">
+                                    <i class="fas fa-parking"></i> Parking
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h4 class="text-primary mb-0">
+                                        ${{ hotel.rooms.first.base_price|default:"--" }}
+                                    </h4>
+                                    <small class="text-muted">per night</small>
+                                </div>
+                                <a href="{% url 'hotels:hotel_detail' hotel.id %}" 
+                                   class="btn btn-primary">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Hotel pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode|cut:'page=' }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-hotel fa-4x text-muted mb-3"></i>
+                <h3>No hotels found</h3>
+                <p class="text-muted">Try adjusting your search criteria</p>
+                <a href="{% url 'hotels:hotel_list' %}" class="btn btn-primary">
+                    Clear Filters
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function applyFilters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Get star rating
+    const starCheckboxes = document.querySelectorAll('input[name="star_rating"]:checked');
+    if (starCheckboxes.length > 0) {
+        urlParams.set('star_rating', Array.from(starCheckboxes).map(cb => cb.value).join(','));
+    } else {
+        urlParams.delete('star_rating');
+    }
+    
+    // Get price range
+    const minPrice = document.getElementById('min_price').value;
+    const maxPrice = document.getElementById('max_price').value;
+    if (minPrice) urlParams.set('min_price', minPrice);
+    else urlParams.delete('min_price');
+    if (maxPrice) urlParams.set('max_price', maxPrice);
+    else urlParams.delete('max_price');
+    
+    // Get amenities
+    const amenityCheckboxes = document.querySelectorAll('input[name="amenities"]:checked');
+    if (amenityCheckboxes.length > 0) {
+        urlParams.set('amenities', Array.from(amenityCheckboxes).map(cb => cb.value).join(','));
+    } else {
+        urlParams.delete('amenities');
+    }
+    
+    window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+}
+</script>
+{% endblock %}

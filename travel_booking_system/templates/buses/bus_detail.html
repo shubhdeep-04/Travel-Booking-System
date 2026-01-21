@@ -1,0 +1,881 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ bus.route_from }} to {{ bus.route_to }} - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'buses:bus_search' %}">Buses</a></li>
+            <li class="breadcrumb-item active">{{ bus.route_from }} to {{ bus.route_to }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Left Column - Bus Details -->
+        <div class="col-lg-8">
+            <!-- Bus Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ bus.route_from }} → {{ bus.route_to }}</h4>
+                        {% if bus.available_seats > 0 %}
+                        <span class="badge bg-success">{{ bus.available_seats }} Seats Available</span>
+                        {% else %}
+                        <span class="badge bg-danger">Sold Out</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            <img src="{{ bus.operator.logo.url|default:'/static/images/bus-default.png' }}" 
+                                 alt="{{ bus.operator.name }}" class="img-fluid rounded" 
+                                 style="max-height: 100px; object-fit: contain;">
+                            <div class="mt-2">
+                                <h6>{{ bus.operator.name }}</h6>
+                                <small class="text-muted">Operator</small>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="info-box mb-3">
+                                        <div class="info-label">Bus Number</div>
+                                        <div class="info-value">{{ bus.bus_number }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-box mb-3">
+                                        <div class="info-label">Bus Type</div>
+                                        <div class="info-value">{{ bus.bus_type.name }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-box mb-3">
+                                        <div class="info-label">Total Seats</div>
+                                        <div class="info-value">{{ bus.total_seats }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="route-timeline mb-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-center">
+                                        <div class="time-display">{{ bus.departure_time|time:"h:i A" }}</div>
+                                        <div class="station-name">{{ bus.route_from }}</div>
+                                        <small class="text-muted">Departure</small>
+                                    </div>
+                                    <div class="flex-grow-1 mx-3">
+                                        <div class="timeline">
+                                            <div class="timeline-line"></div>
+                                            <div class="timeline-duration text-center">
+                                                <i class="fas fa-clock text-warning me-1"></i>
+                                                {{ bus.duration_hours|default:"--" }} hours
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="time-display">{{ bus.arrival_time|time:"h:i A" }}</div>
+                                        <div class="station-name">{{ bus.route_to }}</div>
+                                        <small class="text-muted">Arrival</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="amenities-section">
+                                <h6 class="mb-3">Amenities</h6>
+                                <div class="row">
+                                    <div class="col-6 col-md-3">
+                                        <div class="amenity-item text-center p-2">
+                                            <i class="fas {% if bus.has_ac %}fa-check-circle text-success{% else %}fa-times-circle text-muted{% endif %} fa-2x mb-2"></i>
+                                            <div class="amenity-label">AC</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="amenity-item text-center p-2">
+                                            <i class="fas {% if bus.has_wifi %}fa-check-circle text-success{% else %}fa-times-circle text-muted{% endif %} fa-2x mb-2"></i>
+                                            <div class="amenity-label">WiFi</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="amenity-item text-center p-2">
+                                            <i class="fas {% if bus.has_charging %}fa-check-circle text-success{% else %}fa-times-circle text-muted{% endif %} fa-2x mb-2"></i>
+                                            <div class="amenity-label">Charging</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="amenity-item text-center p-2">
+                                            <i class="fas {% if bus.has_toilet %}fa-check-circle text-success{% else %}fa-times-circle text-muted{% endif %} fa-2x mb-2"></i>
+                                            <div class="amenity-label">Toilet</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bus Stops -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Bus Stops</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline-stops">
+                        {% for stop in stops %}
+                        <div class="timeline-stop {% if forloop.first %}first-stop{% endif %} {% if forloop.last %}last-stop{% endif %}">
+                            <div class="stop-dot"></div>
+                            <div class="stop-content">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">{{ stop.stop_name }}</h6>
+                                        <small class="text-muted">{{ stop.city }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        {% if stop.arrival_time %}
+                                        <div class="text-muted small">Arrival: {{ stop.arrival_time|time:"h:i A" }}</div>
+                                        {% endif %}
+                                        {% if stop.departure_time %}
+                                        <div class="text-muted small">Departure: {{ stop.departure_time|time:"h:i A" }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-3">
+                            <p class="text-muted">No stop information available.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-star me-2"></i>Reviews</h5>
+                        <div>
+                            <span class="badge bg-warning">★ {{ bus.operator.rating|default:"0.0" }}</span>
+                            <small class="text-muted ms-2">Based on {{ bus.reviews.count }} reviews</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reviews %}
+                    {% for review in reviews %}
+                    <div class="review-item mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <strong>{{ review.user.username }}</strong>
+                                <div class="star-rating small">
+                                    {% for i in "12345"|make_list %}
+                                    <i class="fas fa-star {% if forloop.counter <= review.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <h6 class="mb-2">{{ review.title }}</h6>
+                        <p class="mb-0">{{ review.comment|truncatechars:200 }}</p>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if reviews.has_other_pages %}
+                    <nav aria-label="Review pages">
+                        <ul class="pagination pagination-sm justify-content-center">
+                            {% if reviews.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reviews.previous_page_number }}#reviews">Previous</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for i in reviews.paginator.page_range|slice:":3" %}
+                            <li class="page-item {% if reviews.number == i %}active{% endif %}">
+                                <a class="page-link" href="?page={{ i }}#reviews">{{ i }}</a>
+                            </li>
+                            {% endfor %}
+                            
+                            {% if reviews.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reviews.next_page_number }}#reviews">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted">No reviews yet. Be the first to review!</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.is_authenticated %}
+                    <div class="add-review mt-4">
+                        <h6>Add Your Review</h6>
+                        <form method="post" action="{% url 'buses:submit_review' bus.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="id_rating" class="form-label">Rating</label>
+                                <div class="star-select">
+                                    {% for i in "12345"|make_list %}
+                                    <i class="fas fa-star star-selector" data-rating="{{ forloop.counter }}"></i>
+                                    {% endfor %}
+                                    <input type="hidden" name="rating" id="id_rating" value="5">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_title" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="id_title" name="title" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_comment" class="form-label">Comment</label>
+                                <textarea class="form-control" id="id_comment" name="comment" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-warning">Submit Review</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Please <a href="{% url 'login' %}?next={{ request.path }}">login</a> to submit a review.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Booking Box -->
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 20px;">
+                <!-- Fare & Booking Box -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Book Now</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="fare-summary mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Base Fare:</span>
+                                <span>${{ bus.base_fare|floatformat:2 }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Tax ({{ bus.tax_percentage }}%):</span>
+                                <span>${{ bus.tax_amount|floatformat:2 }}</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold">
+                                <span>Total Fare:</span>
+                                <span class="h5 text-danger">${{ bus.final_fare|floatformat:2 }}</span>
+                            </div>
+                            <small class="text-muted d-block mt-1">Per seat</small>
+                        </div>
+                        
+                        {% if bus.available_seats > 0 %}
+                        <form method="post" action="{% url 'buses:bus_booking' bus.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="travel_date" value="{{ travel_date }}">
+                            
+                            <div class="mb-3">
+                                <label for="id_seats" class="form-label">Number of Seats</label>
+                                <select class="form-select" id="id_seats" name="seats_count" required>
+                                    {% for i in "123456"|make_list %}
+                                    <option value="{{ forloop.counter }}" {% if forloop.counter == 1 %}selected{% endif %}>
+                                        {{ forloop.counter }} Seat{% if forloop.counter > 1 %}s{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Travel Date: <strong>{{ travel_date }}</strong>
+                            </div>
+                            
+                            <button type="button" class="btn btn-warning w-100 mb-3" data-bs-toggle="modal" data-bs-target="#seatSelectionModal">
+                                <i class="fas fa-chair me-2"></i>Select Seats
+                            </button>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-ticket-alt me-2"></i>Book Now
+                                </button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            This bus is sold out. Please try another bus.
+                        </div>
+                        <a href="{% url 'buses:bus_search' %}" class="btn btn-primary w-100">
+                            Find Other Buses
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Similar Buses -->
+                {% if similar_buses %}
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0">Similar Buses</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for similar_bus in similar_buses %}
+                        <div class="similar-bus-item mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ similar_bus.route_from }} → {{ similar_bus.route_to }}</h6>
+                                    <small class="text-muted">{{ similar_bus.departure_time|time:"h:i A" }}</small>
+                                    <div class="mt-1">
+                                        <small class="text-muted">{{ similar_bus.bus_type.name }}</small>
+                                        {% if similar_bus.has_ac %}<small class="badge bg-info ms-1">AC</small>{% endif %}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-danger">${{ similar_bus.final_fare|floatformat:2 }}</div>
+                                    <a href="{% url 'buses:bus_detail' similar_bus.id %}" class="btn btn-sm btn-outline-primary mt-1">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seat Selection Modal -->
+<div class="modal fade" id="seatSelectionModal" tabindex="-1" aria-labelledby="seatSelectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="seatSelectionModalLabel">Select Your Seats</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="seatLayout" class="seat-layout mb-4">
+                    <!-- Seat layout will be loaded here via JavaScript -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading seat layout...</p>
+                    </div>
+                </div>
+                
+                <div class="seat-legend mb-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="legend-item">
+                                <div class="seat-example available"></div>
+                                <span>Available</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="legend-item">
+                                <div class="seat-example selected"></div>
+                                <span>Selected</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="legend-item">
+                                <div class="seat-example booked"></div>
+                                <span>Booked</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="legend-item">
+                                <div class="seat-example women"></div>
+                                <span>Women Only</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="selected-seats-info mb-3">
+                    <h6>Selected Seats: <span id="selectedSeatsCount">0</span></h6>
+                    <div id="selectedSeatsList" class="selected-seats-list"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmSeats">Confirm Selection</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.info-box {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.route-timeline {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.time-display {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.station-name {
+    font-size: 1rem;
+    color: #333;
+    margin: 5px 0;
+}
+
+.timeline {
+    position: relative;
+    height: 2px;
+    background: #dee2e6;
+}
+
+.timeline-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #198754;
+    width: 100%;
+}
+
+.timeline-duration {
+    position: absolute;
+    top: -25px;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 0 10px;
+    display: inline-block;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.amenity-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.amenity-item:hover {
+    background: #f8f9fa;
+}
+
+.amenity-label {
+    font-size: 0.9rem;
+}
+
+.timeline-stops {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-stop {
+    position: relative;
+    padding: 15px 0;
+    border-left: 2px solid #dee2e6;
+}
+
+.timeline-stop.first-stop {
+    border-left-color: #198754;
+}
+
+.timeline-stop.last-stop {
+    border-left-color: #dc3545;
+}
+
+.stop-dot {
+    position: absolute;
+    left: -10px;
+    top: 20px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #6c757d;
+    border: 3px solid white;
+}
+
+.timeline-stop.first-stop .stop-dot {
+    background: #198754;
+}
+
+.timeline-stop.last-stop .stop-dot {
+    background: #dc3545;
+}
+
+.stop-content {
+    margin-left: 20px;
+}
+
+.star-rating {
+    color: #ffc107;
+}
+
+.similar-bus-item {
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
+/* Seat Layout */
+.seat-layout {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+}
+
+.seat-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.row-label {
+    width: 40px;
+    text-align: center;
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.seat {
+    width: 40px;
+    height: 40px;
+    margin: 0 5px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.seat.available {
+    background: #e7f6e7;
+    color: #198754;
+}
+
+.seat.available:hover {
+    background: #c8e6c9;
+    transform: scale(1.1);
+}
+
+.seat.selected {
+    background: #ffc107;
+    color: #000;
+    border-color: #ffc107;
+}
+
+.seat.booked {
+    background: #dc3545;
+    color: white;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.seat.women {
+    background: #f8bbd0;
+    color: #880e4f;
+}
+
+.seat.emergency {
+    background: #fff3cd;
+    color: #856404;
+    border: 2px dashed #ffc107;
+}
+
+.aisle-space {
+    width: 40px;
+    margin: 0 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.seat-example {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    margin-right: 10px;
+}
+
+.seat-example.available {
+    background: #e7f6e7;
+}
+
+.seat-example.selected {
+    background: #ffc107;
+}
+
+.seat-example.booked {
+    background: #dc3545;
+}
+
+.seat-example.women {
+    background: #f8bbd0;
+}
+
+.selected-seats-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.selected-seat-tag {
+    background: #ffc107;
+    color: #000;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.selected-seat-tag button {
+    background: none;
+    border: none;
+    color: #666;
+    margin-left: 5px;
+    cursor: pointer;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Star rating for review
+    const stars = document.querySelectorAll('.star-selector');
+    const ratingInput = document.getElementById('id_rating');
+    
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = this.getAttribute('data-rating');
+            ratingInput.value = rating;
+            
+            stars.forEach(s => {
+                if (s.getAttribute('data-rating') <= rating) {
+                    s.classList.add('text-warning');
+                    s.classList.remove('text-muted');
+                } else {
+                    s.classList.remove('text-warning');
+                    s.classList.add('text-muted');
+                }
+            });
+        });
+        
+        // Initialize with 5 stars
+        star.classList.add('text-warning');
+    });
+    
+    // Seat selection modal
+    const seatModal = document.getElementById('seatSelectionModal');
+    let selectedSeats = [];
+    
+    if (seatModal) {
+        seatModal.addEventListener('show.bs.modal', function() {
+            loadSeatLayout();
+        });
+        
+        function loadSeatLayout() {
+            const seatLayoutDiv = document.getElementById('seatLayout');
+            const busId = '{{ bus.id }}';
+            const travelDate = '{{ travel_date }}';
+            
+            // Simulated seat layout data
+            const seatLayoutData = {
+                bus_id: busId,
+                total_seats: {{ bus.total_seats }},
+                seats_per_row: 4,
+                seat_layout: [1, 2, 1],
+                rows: {
+                    1: [
+                        {seat_number: '1A', seat_type: 'WINDOW', is_available: true, is_booked: false},
+                        {seat_number: '1B', seat_type: 'AISLE', is_available: true, is_booked: false},
+                        {seat_number: '1C', seat_type: 'AISLE', is_available: true, is_booked: false},
+                        {seat_number: '1D', seat_type: 'WINDOW', is_available: false, is_booked: true}
+                    ],
+                    2: [
+                        {seat_number: '2A', seat_type: 'WINDOW', is_available: true, is_booked: false},
+                        {seat_number: '2B', seat_type: 'AISLE', is_available: true, is_booked: false},
+                        {seat_number: '2C', seat_type: 'AISLE', is_available: true, is_booked: false},
+                        {seat_number: '2D', seat_type: 'WINDOW', is_available: true, is_booked: false}
+                    ],
+                    3: [
+                        {seat_number: '3A', seat_type: 'WINDOW', is_available: true, is_booked: false},
+                        {seat_number: '3B', seat_type: 'AISLE', is_available: true, is_booked: false},
+                        {seat_number: '3C', seat_type: 'AISLE', is_available: true, is_booked: false},
+                        {seat_number: '3D', seat_type: 'WINDOW', is_available: true, is_booked: false}
+                    ]
+                }
+            };
+            
+            renderSeatLayout(seatLayoutData);
+        }
+        
+        function renderSeatLayout(data) {
+            const seatLayoutDiv = document.getElementById('seatLayout');
+            let html = '<div class="text-center mb-3"><h5>Seat Layout</h5></div>';
+            
+            for (let rowNum = 1; rowNum <= Object.keys(data.rows).length; rowNum++) {
+                const seats = data.rows[rowNum];
+                html += `<div class="seat-row">`;
+                html += `<div class="row-label">${rowNum}</div>`;
+                
+                seats.forEach(seat => {
+                    let seatClass = 'seat ';
+                    let title = seat.seat_number;
+                    
+                    if (seat.is_booked) {
+                        seatClass += 'booked';
+                        title += ' (Booked)';
+                    } else if (!seat.is_available) {
+                        seatClass += 'booked';
+                        title += ' (Not Available)';
+                    } else {
+                        seatClass += 'available';
+                        if (seat.seat_type === 'WINDOW') {
+                            title += ' (Window)';
+                        } else if (seat.seat_type === 'AISLE') {
+                            title += ' (Aisle)';
+                        }
+                    }
+                    
+                    html += `<div class="${seatClass}" data-seat="${seat.seat_number}" title="${title}" onclick="selectSeat('${seat.seat_number}')">${seat.seat_number}</div>`;
+                    
+                    // Add aisle space if needed
+                    if (seat.seat_number === '1B' || seat.seat_number === '2B') {
+                        html += '<div class="aisle-space"></div>';
+                    }
+                });
+                
+                html += `</div>`;
+            }
+            
+            seatLayoutDiv.innerHTML = html;
+        }
+        
+        window.selectSeat = function(seatNumber) {
+            const seatElement = document.querySelector(`[data-seat="${seatNumber}"]`);
+            const maxSeats = parseInt(document.getElementById('id_seats').value);
+            
+            if (seatElement.classList.contains('booked')) {
+                return;
+            }
+            
+            if (seatElement.classList.contains('selected')) {
+                // Deselect seat
+                seatElement.classList.remove('selected');
+                seatElement.classList.add('available');
+                selectedSeats = selectedSeats.filter(s => s !== seatNumber);
+            } else {
+                if (selectedSeats.length >= maxSeats) {
+                    alert(`You can select maximum ${maxSeats} seat(s)`);
+                    return;
+                }
+                // Select seat
+                seatElement.classList.remove('available');
+                seatElement.classList.add('selected');
+                selectedSeats.push(seatNumber);
+            }
+            
+            updateSelectedSeatsDisplay();
+        }
+        
+        function updateSelectedSeatsDisplay() {
+            const countElement = document.getElementById('selectedSeatsCount');
+            const listElement = document.getElementById('selectedSeatsList');
+            
+            countElement.textContent = selectedSeats.length;
+            
+            if (selectedSeats.length > 0) {
+                let html = '';
+                selectedSeats.forEach(seat => {
+                    html += `<div class="selected-seat-tag">
+                        ${seat}
+                        <button type="button" onclick="removeSeat('${seat}')">&times;</button>
+                    </div>`;
+                });
+                listElement.innerHTML = html;
+            } else {
+                listElement.innerHTML = '<p class="text-muted">No seats selected</p>';
+            }
+        }
+        
+        window.removeSeat = function(seatNumber) {
+            selectSeat(seatNumber);
+        }
+        
+        document.getElementById('confirmSeats').addEventListener('click', function() {
+            if (selectedSeats.length === 0) {
+                alert('Please select at least one seat');
+                return;
+            }
+            
+            // Store selected seats in a hidden input or form field
+            // This is a simplified version
+            const seatsInput = document.createElement('input');
+            seatsInput.type = 'hidden';
+            seatsInput.name = 'seats';
+            seatsInput.value = selectedSeats.join(',');
+            
+            // Add to form (you need to adjust based on your actual form structure)
+            const bookingForm = document.querySelector('form[action*="bus_booking"]');
+            if (bookingForm) {
+                const existingInput = bookingForm.querySelector('input[name="seats"]');
+                if (existingInput) {
+                    existingInput.remove();
+                }
+                bookingForm.appendChild(seatsInput);
+            }
+            
+            // Update seats count
+            const seatsCountSelect = document.getElementById('id_seats');
+            seatsCountSelect.value = selectedSeats.length;
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(seatModal);
+            modal.hide();
+            
+            alert(`Selected seats: ${selectedSeats.join(', ')}`);
+        });
+    }
+});
+</script>
+{% endblock %}

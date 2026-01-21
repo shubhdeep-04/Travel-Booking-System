@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Account - TravelBook{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Delete Account</h4>
+                    <a href="{% url 'profile' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Profile
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-circle"></i> Warning: This action cannot be undone!</h5>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h6>What will be deleted:</h6>
+                        <ul class="mb-0">
+                            <li>Your profile information</li>
+                            <li>All your bookings (upcoming bookings will be cancelled)</li>
+                            <li>Payment history and preferences</li>
+                            <li>Reviews and ratings you've submitted</li>
+                            <li>All associated data</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h6>Before you delete:</h6>
+                        <ul class="mb-0">
+                            <li>Download any important booking information</li>
+                            <li>Cancel any upcoming bookings to avoid cancellation fees</li>
+                            <li>Use any remaining loyalty points or credits</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <form method="POST" id="deleteAccountForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="confirmationText" class="form-label">
+                            Type "DELETE" to confirm account deletion:
+                        </label>
+                        <input type="text" class="form-control" id="confirmationText" required 
+                               placeholder="Type DELETE here">
+                    </div>
+                    
+                    <div class="mb-4 form-check">
+                        <input type="checkbox" class="form-check-input" id="understandCheck" required>
+                        <label class="form-check-label" for="understandCheck">
+                            I understand that this action is permanent and cannot be undone.
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'profile' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                            <i class="fas fa-trash-alt"></i> Permanently Delete Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const confirmationInput = document.getElementById('confirmationText');
+    const understandCheck = document.getElementById('understandCheck');
+    const deleteButton = document.getElementById('deleteButton');
+    const deleteForm = document.getElementById('deleteAccountForm');
+    
+    function updateDeleteButton() {
+        const isConfirmed = confirmationInput.value === 'DELETE';
+        const isChecked = understandCheck.checked;
+        deleteButton.disabled = !(isConfirmed && isChecked);
+    }
+    
+    confirmationInput.addEventListener('input', updateDeleteButton);
+    understandCheck.addEventListener('change', updateDeleteButton);
+    
+    deleteForm.addEventListener('submit', function(e) {
+        if (!confirm('Are you absolutely sure you want to delete your account? This cannot be undone!')) {
+            e.preventDefault();
+        }
+    });
+</script>
+{% endblock %}

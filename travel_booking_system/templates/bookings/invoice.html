@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<!-- templates/bookings/invoice.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Invoice - {{ booking.booking_reference }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .invoice-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.1);
+    }
+    .invoice-header {
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+    .invoice-title {
+        color: #333;
+        font-weight: 700;
+    }
+    .company-info {
+        text-align: right;
+    }
+    .company-info h5 {
+        color: #495057;
+        font-weight: 600;
+    }
+    .section-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .invoice-table {
+        width: 100%;
+        margin-bottom: 30px;
+    }
+    .invoice-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+    }
+    .total-row {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    .payment-instructions {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    .watermark {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 8rem;
+        color: rgba(0,0,0,0.1);
+        z-index: -1;
+        font-weight: bold;
+        pointer-events: none;
+    }
+    @media print {
+        .no-print {
+            display: none;
+        }
+        .invoice-container {
+            box-shadow: none;
+            padding: 0;
+        }
+        .watermark {
+            display: block;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Watermark for printed version -->
+    <div class="watermark">
+        {% if booking.status == 'PAID' %}
+        PAID
+        {% else %}
+        INVOICE
+        {% endif %}
+    </div>
+
+    <div class="invoice-container">
+        <!-- Header -->
+        <div class="invoice-header">
+            <div class="row">
+                <div class="col-md-6">
+                    <h1 class="invoice-title">INVOICE</h1>
+                    <p class="text-muted mb-0">Invoice #: INV-{{ booking.booking_reference }}</p>
+                    <p class="text-muted mb-0">Invoice Date: {{ booking.booking_date|date:"F d, Y" }}</p>
+                    <p class="text-muted">Due Date: {{ booking.booking_date|date:"F d, Y" }}</p>
+                </div>
+                <div class="col-md-6 company-info">
+                    <h5>Travel Booking System</h5>
+                    <p class="text-muted mb-0">
+                        123 Travel Street<br>
+                        Tourism City, TC 10001<br>
+                        contact@travelbookingsystem.com<br>
+                        +1 (555) 123-4567
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing Information -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6 class="section-title">Bill To</h6>
+                <p class="mb-2">
+                    <strong>{{ booking.contact_name }}</strong><br>
+                    {{ booking.contact_email }}<br>
+                    {{ booking.contact_phone }}
+                </p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="section-title">Booking Information</h6>
+                <p class="mb-2">
+                    <strong>Booking Reference:</strong> {{ booking.booking_reference }}<br>
+                    <strong>Booking Date:</strong> {{ booking.booking_date|date:"F d, Y, h:i A" }}<br>
+                    <strong>Status:</strong> 
+                    <span class="badge {% if booking.status == 'CONFIRMED' %}bg-success
+                                       {% elif booking.status == 'PENDING' %}bg-warning
+                                       {% elif booking.status == 'CANCELLED' %}bg-danger
+                                       {% else %}bg-secondary{% endif %}">
+                        {{ booking.get_status_display }}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Service Details -->
+        <div class="mb-4">
+            <h6 class="section-title">Service Details</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-2">
+                        <strong>Service Type:</strong> {{ booking.get_service_type_display }}<br>
+                        <strong>Service:</strong> {{ booking.service_name }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    {% if booking.check_in_date %}
+                    <p class="mb-2">
+                        <strong>Check-in:</strong> {{ booking.check_in_date|date:"F d, Y" }}<br>
+                        {% if booking.check_out_date %}
+                        <strong>Check-out:</strong> {{ booking.check_out_date|date:"F d, Y" }}
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                    {% if booking.travel_date %}
+                    <p class="mb-2">
+                        <strong>Travel Date:</strong> {{ booking.travel_date|date:"F d, Y" }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="mb-4">
+            <h6 class="section-title">Invoice Items</h6>
+            <table class="table invoice-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th class="text-end">Quantity</th>
+                        <th class="text-end">Unit Price</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            {{ booking.get_service_type_display }} - {{ booking.service_name }}
+                            {% if booking.adults or booking.children %}
+                            <br>
+                            <small class="text-muted">
+                                Passengers: {{ booking.adults }} Adult(s), {{ booking.children }} Child(ren)
+                            </small>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">{{ booking.quantity }}</td>
+                        <td class="text-end">${{ booking.base_amount|intcomma }}</td>
+                        <td class="text-end">${{ booking.base_amount|intcomma }}</td>
+                    </tr>
+                    
+                    {% if booking.tax_amount %}
+                    <tr>
+                        <td colspan="3">Tax</td>
+                        <td class="text-end">${{ booking.tax_amount|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                    
+                    {% if booking.discount_amount %}
+                    <tr>
+                        <td colspan="3">Discount</td>
+                        <td class="text-end text-danger">-${{ booking.discount_amount|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                    
+                    {% if booking.refund_amount and booking.status == 'CANCELLED' %}
+                    <tr>
+                        <td colspan="3">Refund Amount</td>
+                        <td class="text-end text-success">-${{ booking.refund_amount|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                    
+                    <tr class="total-row">
+                        <td colspan="3" class="text-end"><strong>TOTAL</strong></td>
+                        <td class="text-end"><strong>${{ booking.total_amount|intcomma }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Payment Information -->
+        {% if booking.payments.exists %}
+        <div class="mb-4">
+            <h6 class="section-title">Payment Information</h6>
+            {% for payment in booking.payments.all %}
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-2">
+                        <strong>Payment Reference:</strong> {{ payment.payment_reference }}<br>
+                        <strong>Method:</strong> {{ payment.get_payment_method_display }}<br>
+                        <strong>Date:</strong> {{ payment.completed_at|date:"F d, Y"|default:payment.initiated_at|date:"F d, Y" }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-2">
+                        <strong>Amount:</strong> ${{ payment.amount|intcomma }}<br>
+                        <strong>Status:</strong> 
+                        <span class="badge {% if payment.status == 'COMPLETED' %}bg-success
+                                           {% elif payment.status == 'PENDING' %}bg-warning
+                                           {% else %}bg-secondary{% endif %}">
+                            {{ payment.get_status_display }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Terms & Conditions -->
+        <div class="payment-instructions">
+            <h6 class="section-title">Terms & Conditions</h6>
+            <ul class="small text-muted mb-0">
+                <li>Payment is due upon receipt of this invoice</li>
+                <li>Make all checks payable to Travel Booking System</li>
+                <li>If you have any questions concerning this invoice, contact our accounts department</li>
+                <li>Cancellation charges apply as per our cancellation policy</li>
+                <li>This is a computer-generated invoice. No signature is required.</li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-5 pt-4 border-top text-center">
+            <p class="text-muted small mb-0">
+                Thank you for choosing Travel Booking System<br>
+                This invoice was generated on {{ booking.booking_date|date:"F d, Y, h:i A" }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="text-center mt-4 no-print">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="fas fa-print"></i> Print Invoice
+        </button>
+        <a href="{% url 'bookings:booking_detail' booking.id %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Booking
+        </a>
+        <a href="{% url 'bookings:download_ticket' booking.id %}" class="btn btn-success">
+            <i class="fas fa-download"></i> Download Ticket
+        </a>
+    </div>
+</div>
+{% endblock %}

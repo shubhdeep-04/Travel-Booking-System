@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<!-- templates/payments/payment_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Payment Details - {{ payment.payment_reference }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+        border-radius: 10px;
+    }
+    .status-badge-large {
+        font-size: 1rem;
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+    }
+    .info-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 25px;
+        background: white;
+    }
+    .detail-item {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    .detail-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    .detail-label {
+        font-weight: 500;
+        color: #6c757d;
+        min-width: 140px;
+    }
+    .action-btn {
+        min-width: 120px;
+        margin: 5px;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -34px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #007bff;
+        border: 3px solid white;
+        box-shadow: 0 0 0 3px #dee2e6;
+    }
+    .timeline-date {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .payment-method-icon {
+        font-size: 2.5rem;
+        color: #6c757d;
+    }
+    .amount-display {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Payment Header -->
+    <div class="payment-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="h2 mb-2">Payment Details</h1>
+                    <p class="mb-0">
+                        <i class="fas fa-hashtag"></i> {{ payment.payment_reference }}
+                        <span class="mx-2">|</span>
+                        <i class="far fa-calendar"></i> {{ payment.initiated_at|date:"F d, Y" }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if payment.status == 'COMPLETED' %}
+                    <span class="status-badge-large bg-success">PAYMENT SUCCESSFUL</span>
+                    {% elif payment.status == 'PENDING' %}
+                    <span class="status-badge-large bg-warning">PENDING PAYMENT</span>
+                    {% elif payment.status == 'FAILED' %}
+                    <span class="status-badge-large bg-danger">PAYMENT FAILED</span>
+                    {% elif payment.status == 'REFUNDED' %}
+                    <span class="status-badge-large bg-info">REFUNDED</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="container mb-4">
+        <div class="d-flex flex-wrap justify-content-between">
+            <div>
+                <a href="{% url 'payments:my_payments' %}" class="btn btn-outline-secondary action-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Payments
+                </a>
+                <a href="{% url 'payments:payment_invoice' payment.id %}" class="btn btn-outline-primary action-btn">
+                    <i class="fas fa-file-invoice"></i> View Invoice
+                </a>
+                <button onclick="window.print()" class="btn btn-outline-info action-btn">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+            <div>
+                {% if payment.is_refundable %}
+                <a href="{% url 'payments:request_refund' payment.id %}" class="btn btn-warning action-btn">
+                    <i class="fas fa-money-bill-wave"></i> Request Refund
+                </a>
+                {% endif %}
+                {% if payment.status == 'PENDING' %}
+                <button class="btn btn-success action-btn" onclick="retryPayment()">
+                    <i class="fas fa-redo"></i> Retry Payment
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <!-- Left Column: Payment Details -->
+            <div class="col-lg-8">
+                <!-- Payment Information -->
+                <div class="info-card">
+                    <h5 class="mb-4"><i class="fas fa-info-circle text-primary"></i> Payment Information</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Payment Reference:</span>
+                                <span class="flex-grow-1 fw-bold">{{ payment.payment_reference }}</span>
+                            </div>
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Booking Reference:</span>
+                                <span class="flex-grow-1">
+                                    <a href="{% url 'bookings:booking_detail' payment.booking.id %}" class="text-decoration-none">
+                                        {{ payment.booking.booking_reference }}
+                                    </a>
+                                </span>
+                            </div>
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Service:</span>
+                                <span class="flex-grow-1">{{ payment.booking.service_name }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Status:</span>
+                                <span class="flex-grow-1">
+                                    {% if payment.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">{{ payment.get_status_display }}</span>
+                                    {% elif payment.status == 'PENDING' %}
+                                    <span class="badge bg-warning">{{ payment.get_status_display }}</span>
+                                    {% elif payment.status == 'FAILED' %}
+                                    <span class="badge bg-danger">{{ payment.get_status_display }}</span>
+                                    {% elif payment.status == 'REFUNDED' %}
+                                    <span class="badge bg-info">{{ payment.get_status_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ payment.get_status_display }}</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Initiated:</span>
+                                <span class="flex-grow-1">{{ payment.initiated_at|date:"M d, Y, h:i A" }}</span>
+                            </div>
+                            {% if payment.completed_at %}
+                            <div class="detail-item d-flex">
+                                <span class="detail-label">Completed:</span>
+                                <span class="flex-grow-1">{{ payment.completed_at|date:"M d, Y, h:i A" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="info-card">
+                    <h5 class="mb-4"><i class="fas fa-credit-card text-success"></i> Payment Method</h5>
+                    
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            {% if payment.payment_method == 'CREDIT_CARD' %}
+                            <div class="payment-method-icon">
+                                <i class="far fa-credit-card"></i>
+                            </div>
+                            {% elif payment.payment_method == 'UPI' %}
+                            <div class="payment-method-icon">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            {% elif payment.payment_method == 'NET_BANKING' %}
+                            <div class="payment-method-icon">
+                                <i class="fas fa-university"></i>
+                            </div>
+                            {% elif payment.payment_method == 'WALLET' %}
+                            <div class="payment-method-icon">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            {% else %}
+                            <div class="payment-method-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-10">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="detail-item d-flex">
+                                        <span class="detail-label">Method:</span>
+                                        <span class="flex-grow-1">{{ payment.get_payment_method_display }}</span>
+                                    </div>
+                                    {% if payment.payment_gateway %}
+                                    <div class="detail-item d-flex">
+                                        <span class="detail-label">Gateway:</span>
+                                        <span class="flex-grow-1">{{ payment.payment_gateway }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% if payment.card_last4 %}
+                                    <div class="detail-item d-flex">
+                                        <span class="detail-label">Card:</span>
+                                        <span class="flex-grow-1">**** **** **** {{ payment.card_last4 }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if payment.card_brand %}
+                                    <div class="detail-item d-flex">
+                                        <span class="detail-label">Card Brand:</span>
+                                        <span class="flex-grow-1">{{ payment.card_brand }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if payment.upi_id %}
+                                    <div class="detail-item d-flex">
+                                        <span class="detail-label">UPI ID:</span>
+                                        <span class="flex-grow-1">{{ payment.upi_id }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Amount Details -->
+                <div class="info-card">
+                    <h5 class="mb-4"><i class="fas fa-receipt text-success"></i> Amount Details</h5>
+                    
+                    <div class="text-center mb-4">
+                        <div class="amount-display">${{ payment.amount|intcomma }}</div>
+                        <p class="text-muted mb-0">Payment Amount</p>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <td>Amount Paid</td>
+                                    <td class="text-end">${{ payment.amount|intcomma }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Currency</td>
+                                    <td class="text-end">{{ payment.currency }}</td>
+                                </tr>
+                                <tr class="table-active">
+                                    <th>Total Amount</th>
+                                    <th class="text-end">${{ payment.amount|intcomma }}</th>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- External Reference -->
+                {% if payment.external_payment_id %}
+                <div class="info-card">
+                    <h5 class="mb-4"><i class="fas fa-exchange-alt text-info"></i> External Reference</h5>
+                    <div class="detail-item d-flex">
+                        <span class="detail-label">Transaction ID:</span>
+                        <span class="flex-grow-1 font-monospace">{{ payment.external_payment_id }}</span>
+                    </div>
+                    {% if payment.metadata %}
+                    <div class="mt-3">
+                        <h6>Additional Details:</h6>
+                        <pre class="bg-light p-3 rounded">{{ payment.metadata|pprint }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column: Timeline & Actions -->
+            <div class="col-lg-4">
+                <!-- Payment Timeline -->
+                <div class="info-card">
+                    <h5 class="mb-4"><i class="fas fa-history text-info"></i> Payment Timeline</h5>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Payment Initiated</h6>
+                            <p class="timeline-date mb-2">{{ payment.initiated_at|date:"M d, Y, h:i A" }}</p>
+                            <p class="small text-muted mb-0">Payment reference {{ payment.payment_reference }} was created.</p>
+                        </div>
+                        
+                        {% if payment.status == 'COMPLETED' and payment.completed_at %}
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Payment Completed</h6>
+                            <p class="timeline-date mb-2">{{ payment.completed_at|date:"M d, Y, h:i A" }}</p>
+                            <p class="small text-muted mb-0">Payment was successfully processed.</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if payment.status == 'FAILED' and payment.failed_at %}
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Payment Failed</h6>
+                            <p class="timeline-date mb-2">{{ payment.failed_at|date:"M d, Y, h:i A" }}</p>
+                            {% if payment.metadata.failure_reason %}
+                            <p class="small text-muted mb-0">Reason: {{ payment.metadata.failure_reason }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if payment.status == 'REFUNDED' and payment.refunded_at %}
+                        <div class="timeline-item">
+                            <h6 class="mb-1">Payment Refunded</h6>
+                            <p class="timeline-date mb-2">{{ payment.refunded_at|date:"M d, Y, h:i A" }}</p>
+                            <p class="small text-muted mb-0">Full amount was refunded.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Refund Information -->
+                {% if payment.refunds.exists %}
+                <div class="info-card">
+                    <h5 class="mb-4"><i class="fas fa-money-bill-wave text-warning"></i> Refund Information</h5>
+                    {% for refund in payment.refunds.all %}
+                    <div class="mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{{ refund.refund_reference }}</strong>
+                            <span class="badge {% if refund.status == 'COMPLETED' %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ refund.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="mb-1">Amount: ${{ refund.amount|intcomma }}</p>
+                        <p class="mb-1 small text-muted">Method: {{ refund.get_refund_method_display }}</p>
+                        <p class="mb-0 small text-muted">Requested: {{ refund.requested_at|date:"M d, Y" }}</p>
+                        {% if refund.reason %}
+                        <p class="mt-2 small">{{ refund.reason }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Important Information -->
+                <div class="info-card">
+                    <h5 class="mb-4"><i class="fas fa-info-circle text-warning"></i> Important Information</h5>
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-shield-alt"></i> Payment Security</h6>
+                        <ul class="mb-0 small">
+                            <li>This payment is secured with 256-bit encryption</li>
+                            <li>Your payment details are never stored</li>
+                            <li>All transactions are PCI DSS compliant</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-clock"></i> Refund Policy</h6>
+                        <ul class="mb-0 small">
+                            <li>Refunds processed within 5-7 business days</li>
+                            <li>Cancellation charges may apply</li>
+                            <li>Contact support for refund queries</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Support Information -->
+                <div class="info-card">
+                    <h5 class="mb-4"><i class="fas fa-headset text-primary"></i> Need Help?</h5>
+                    <div class="text-center">
+                        <p class="mb-3">Having issues with this payment?</p>
+                        <a href="mailto:support@travelbookingsystem.com" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-envelope"></i> Email Support
+                        </a>
+                        <button class="btn btn-outline-success w-100" onclick="chatWithUs()">
+                            <i class="fas fa-comments"></i> Live Chat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function retryPayment() {
+        if (confirm('Do you want to retry this payment?')) {
+            window.location.href = "{% url 'payments:create_payment' %}";
+        }
+    }
+
+    function chatWithUs() {
+        alert('Live chat feature coming soon! For now, please email support@travelbookingsystem.com');
+    }
+</script>
+{% endblock %}

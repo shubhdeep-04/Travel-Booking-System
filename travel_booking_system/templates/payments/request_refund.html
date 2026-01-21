@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Request Refund - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'payments:my_payments' %}">Payments</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Request Refund</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-undo-alt me-2"></i>Request Refund</h4>
+                </div>
+                <div class="card-body">
+                    {% if form.payment.value %}
+                        {% with payment=form.instance.payment %}
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">Payment Details</h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Payment Reference:</strong> {{ payment.payment_reference }}</p>
+                                    <p class="mb-1"><strong>Booking Reference:</strong> {{ payment.booking.booking_reference }}</p>
+                                    <p class="mb-1"><strong>Service:</strong> {{ payment.booking.get_service_type_display }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Payment Date:</strong> {{ payment.initiated_at|date:"M d, Y" }}</p>
+                                    <p class="mb-1"><strong>Payment Method:</strong> {{ payment.get_payment_method_display }}</p>
+                                    <p class="mb-1"><strong>Amount Paid:</strong> ${{ payment.amount|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <h5 class="mb-3">Refund Amount</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_amount" class="form-label">Amount to Refund</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            {{ form.amount }}
+                                        </div>
+                                        {% if form.amount.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.amount.errors }}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Maximum refundable: ${{ form.payment.value.amount|floatformat:2 }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_refund_method" class="form-label">Refund Method</label>
+                                        {{ form.refund_method }}
+                                        {% if form.refund_method.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.refund_method.errors }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5 class="mb-3">Refund Reason</h5>
+                            <div class="mb-3">
+                                {{ form.reason }}
+                                {% if form.reason.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.reason.errors }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Please provide detailed reason for refund. Minimum 10 characters.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden fields -->
+                        {{ form.payment }}
+
+                        <!-- Refund Policies -->
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Refund Policy</h6>
+                            <ul class="mb-0">
+                                <li>Refunds are processed within 5-7 business days</li>
+                                <li>Service charges may apply based on booking type</li>
+                                <li>Refund to original payment method may take 10-14 days</li>
+                                <li>Refund to wallet is instant</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'payments:my_payments' %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Refund Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Refund Timeline -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Refund Process Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-step">
+                            <div class="timeline-step-circle bg-primary">1</div>
+                            <div class="timeline-step-content">
+                                <h6>Request Submitted</h6>
+                                <p class="text-muted">Your refund request is received</p>
+                            </div>
+                        </div>
+                        <div class="timeline-step">
+                            <div class="timeline-step-circle bg-secondary">2</div>
+                            <div class="timeline-step-content">
+                                <h6>Review & Approval</h6>
+                                <p class="text-muted">Request reviewed within 24 hours</p>
+                            </div>
+                        </div>
+                        <div class="timeline-step">
+                            <div class="timeline-step-circle bg-info">3</div>
+                            <div class="timeline-step-content">
+                                <h6>Processing</h6>
+                                <p class="text-muted">Refund initiated to your chosen method</p>
+                            </div>
+                        </div>
+                        <div class="timeline-step">
+                            <div class="timeline-step-circle bg-success">4</div>
+                            <div class="timeline-step-content">
+                                <h6>Completed</h6>
+                                <p class="text-muted">Amount credited to your account</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+.timeline-step {
+    position: relative;
+    padding-bottom: 30px;
+    padding-left: 30px;
+}
+.timeline-step:last-child {
+    padding-bottom: 0;
+}
+.timeline-step:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #dee2e6;
+}
+.timeline-step:last-child:before {
+    height: 20px;
+}
+.timeline-step-circle {
+    position: absolute;
+    left: -15px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+.timeline-step-content {
+    margin-left: 20px;
+}
+</style>
+{% endblock %}

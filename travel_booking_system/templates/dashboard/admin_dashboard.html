@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+            <p class="text-muted">Welcome back, {{ request.user.username }}!</p>
+        </div>
+        <div class="d-flex">
+            <div class="dropdown me-2">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-calendar-alt me-2"></i>Last 30 Days
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" data-period="7">Last 7 Days</a></li>
+                    <li><a class="dropdown-item" href="#" data-period="30">Last 30 Days</a></li>
+                    <li><a class="dropdown-item" href="#" data-period="90">Last 90 Days</a></li>
+                    <li><a class="dropdown-item" href="#" data-period="365">Last Year</a></li>
+                </ul>
+            </div>
+            <button class="btn btn-primary" onclick="generateReport()">
+                <i class="fas fa-download me-2"></i>Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                                Total Revenue
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">${{ revenue.total|floatformat:2 }}</div>
+                            <div class="mt-2 mb-0 text-muted text-xs">
+                                <span class="text-success me-2"><i class="fas fa-arrow-up"></i> {{ revenue.growth|floatformat:1 }}%</span>
+                                <span>Since last month</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Total Bookings
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ bookings.total }}</div>
+                            <div class="mt-2 mb-0 text-muted text-xs">
+                                <span class="text-success me-2"><i class="fas fa-arrow-up"></i> {{ bookings.growth|floatformat:1 }}%</span>
+                                <span>Since last month</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                Active Users
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ users.active }}</div>
+                            <div class="mt-2 mb-0 text-muted text-xs">
+                                <span>{{ users.total }} total users</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                                Cancellation Rate
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ cancellations.rate|floatformat:1 }}%</div>
+                            <div class="mt-2 mb-0 text-muted text-xs">
+                                <span>{{ cancellations.count }} cancellations</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Revenue Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 fw-bold text-primary">Revenue Overview</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow">
+                            <a class="dropdown-item" href="#" data-chart="revenue">Revenue</a>
+                            <a class="dropdown-item" href="#" data-chart="bookings">Bookings</a>
+                            <a class="dropdown-item" href="#" data-chart="users">Users</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="revenueChart" height="320"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Distribution -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Service Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4">
+                        <canvas id="servicePieChart" height="250"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        {% for service in services %}
+                        <span class="me-3">
+                            <i class="fas fa-circle me-1" style="color: {{ service.color }}"></i>
+                            {{ service.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities & Quick Stats -->
+    <div class="row">
+        <!-- Recent Bookings -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-primary">Recent Bookings</h6>
+                    <a href="{% url 'bookings:admin_booking_list' %}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Booking Ref</th>
+                                    <th>User</th>
+                                    <th>Service</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in recent_bookings %}
+                                <tr>
+                                    <td><a href="{% url 'bookings:booking_detail' pk=booking.id %}">{{ booking.booking_reference }}</a></td>
+                                    <td>{{ booking.user.username }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if booking.service_type == 'HOTEL' %}primary{% elif booking.service_type == 'CAR' %}success{% elif booking.service_type == 'BUS' %}danger{% else %}warning{% endif %}">
+                                            {{ booking.get_service_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>${{ booking.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if booking.status == 'CONFIRMED' %}bg-success
+                                            {% elif booking.status == 'PENDING' %}bg-warning
+                                            {% elif booking.status == 'CANCELLED' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ booking.booking_date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">No recent bookings</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="col-lg-4 mb-4">
+            <!-- System Status -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">System Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Hotels Available</span>
+                            <span class="fw-bold">{{ system_stats.hotels.active }}/{{ system_stats.hotels.total }}</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: {% widthratio system_stats.hotels.active system_stats.hotels.total 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Cars Available</span>
+                            <span class="fw-bold">{{ system_stats.cars.active }}/{{ system_stats.cars.total }}</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {% widthratio system_stats.cars.active system_stats.cars.total 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Buses Running</span>
+                            <span class="fw-bold">{{ system_stats.buses.active }}/{{ system_stats.buses.total }}</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-danger" role="progressbar" 
+                                 style="width: {% widthratio system_stats.buses.active system_stats.buses.total 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Trains Running</span>
+                            <span class="fw-bold">{{ system_stats.trains.active }}/{{ system_stats.trains.total }}</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-warning" role="progressbar" 
+                                 style="width: {% widthratio system_stats.trains.active system_stats.trains.total 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'hotels:admin_hotel_list' %}" class="btn btn-outline-primary text-start">
+                            <i class="fas fa-hotel me-2"></i>Manage Hotels
+                        </a>
+                        <a href="{% url 'cars:admin_car_list' %}" class="btn btn-outline-success text-start">
+                            <i class="fas fa-car me-2"></i>Manage Cars
+                        </a>
+                        <a href="{% url 'buses:admin_bus_list' %}" class="btn btn-outline-danger text-start">
+                            <i class="fas fa-bus me-2"></i>Manage Buses
+                        </a>
+                        <a href="{% url 'trains:admin_train_list' %}" class="btn btn-outline-warning text-start">
+                            <i class="fas fa-train me-2"></i>Manage Trains
+                        </a>
+                        <a href="{% url 'users:user_list' %}" class="btn btn-outline-info text-start">
+                            <i class="fas fa-users me-2"></i>Manage Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Revenue Chart
+const ctx = document.getElementById('revenueChart').getContext('2d');
+const revenueChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ revenue_labels|safe }},
+        datasets: [{
+            label: 'Revenue ($)',
+            data: {{ revenue_data|safe }},
+            borderColor: '#4e73df',
+            backgroundColor: 'rgba(78, 115, 223, 0.05)',
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '$' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Service Pie Chart
+const pieCtx = document.getElementById('servicePieChart').getContext('2d');
+const servicePieChart = new Chart(pieCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ service_labels|safe }},
+        datasets: [{
+            data: {{ service_data|safe }},
+            backgroundColor: {{ service_colors|safe }},
+            hoverOffset: 10
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Period filter
+document.querySelectorAll('[data-period]').forEach(item => {
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const period = this.getAttribute('data-period');
+        window.location.href = `?period=${period}`;
+    });
+});
+
+// Chart type switcher
+document.querySelectorAll('[data-chart]').forEach(item => {
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const chartType = this.getAttribute('data-chart');
+        // Implement chart switching logic here
+        console.log('Switch to', chartType);
+    });
+});
+
+// Generate report
+function generateReport() {
+    // Implement report generation logic
+    window.location.href = "{% url 'dashboard:generate_report_api' %}?format=pdf";
+}
+</script>
+{% endblock %}

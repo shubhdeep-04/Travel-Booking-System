@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<!-- templates/payments/create_payment.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Complete Payment - Travel Booking System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .payment-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    .payment-method-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .payment-method-card:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+    }
+    .payment-method-card.selected {
+        border-color: #007bff;
+        background-color: #e7f1ff;
+    }
+    .payment-method-icon {
+        font-size: 2rem;
+        margin-right: 15px;
+        width: 60px;
+        text-align: center;
+    }
+    .payment-details {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    .payment-info {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        border: 1px solid #e0e0e0;
+    }
+    .card-input-group {
+        position: relative;
+    }
+    .card-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    .secure-payment {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="payment-container">
+        <!-- Payment Header -->
+        <div class="text-center mb-4">
+            <h1 class="h2 mb-3">Complete Your Payment</h1>
+            <p class="text-muted">Secure payment powered by Travel Booking System</p>
+        </div>
+
+        <!-- Payment Summary -->
+        {% if pending_booking %}
+        <div class="payment-summary">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-2">{{ pending_booking.details.service_name|default:"Booking Payment" }}</h4>
+                    <p class="mb-0">
+                        <i class="fas fa-hashtag"></i> {{ pending_booking.details.booking_ref|default:pending_booking.booking_id }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <h2 class="mb-0">${{ pending_booking.amount|intcomma }}</h2>
+                    <p class="mb-0">Total Amount</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="POST" id="paymentForm">
+            {% csrf_token %}
+            
+            <div class="row">
+                <!-- Left Column: Payment Methods -->
+                <div class="col-lg-7">
+                    <!-- Booking Information -->
+                    <div class="payment-info mb-4">
+                        <h5 class="mb-3"><i class="fas fa-info-circle text-primary"></i> Booking Information</h5>
+                        {% if pending_booking.details %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Service:</strong> {{ pending_booking.details.service_type }}</p>
+                                <p class="mb-2"><strong>Reference:</strong> {{ pending_booking.details.booking_ref|default:"N/A" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Amount:</strong> ${{ pending_booking.amount|intcomma }}</p>
+                                {% if pending_booking.details.travel_date %}
+                                <p class="mb-0"><strong>Date:</strong> {{ pending_booking.details.travel_date }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">No booking information available.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Payment Methods -->
+                    <h5 class="mb-3"><i class="fas fa-credit-card text-success"></i> Select Payment Method</h5>
+                    
+                    <!-- Credit/Debit Card -->
+                    <div class="payment-method-card" onclick="selectPaymentMethod('card')" id="cardMethod">
+                        <div class="d-flex align-items-center">
+                            <div class="payment-method-icon">
+                                <i class="far fa-credit-card"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Credit/Debit Card</h6>
+                                <p class="text-muted small mb-0">Pay using Visa, MasterCard, or American Express</p>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" value="CREDIT_CARD" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Card Details (Hidden by default) -->
+                        <div class="payment-details" id="cardDetails" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Card Number</label>
+                                <div class="card-input-group">
+                                    <input type="text" class="form-control" name="card_number" 
+                                           placeholder="1234 5678 9012 3456" maxlength="19"
+                                           data-mask="0000 0000 0000 0000">
+                                    <div class="card-icon">
+                                        <i class="fab fa-cc-visa"></i>
+                                        <i class="fab fa-cc-mastercard ms-1"></i>
+                                        <i class="fab fa-cc-amex ms-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Expiry Date</label>
+                                        <input type="text" class="form-control" name="expiry_date" 
+                                               placeholder="MM/YY" data-mask="00/00">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">CVV</label>
+                                        <input type="password" class="form-control" name="cvv" 
+                                               placeholder="123" maxlength="4">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Cardholder Name</label>
+                                <input type="text" class="form-control" name="cardholder_name" 
+                                       placeholder="As shown on card">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UPI -->
+                    <div class="payment-method-card" onclick="selectPaymentMethod('upi')" id="upiMethod">
+                        <div class="d-flex align-items-center">
+                            <div class="payment-method-icon">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">UPI</h6>
+                                <p class="text-muted small mb-0">Pay using Google Pay, PhonePe, Paytm, or any UPI app</p>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" value="UPI">
+                            </div>
+                        </div>
+                        
+                        <!-- UPI Details -->
+                        <div class="payment-details" id="upiDetails" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">UPI ID</label>
+                                <input type="text" class="form-control" name="upi_id" 
+                                       placeholder="yourname@upi">
+                            </div>
+                            <div class="text-center">
+                                <p class="small text-muted">Scan this QR code with your UPI app</p>
+                                <div style="width: 150px; height: 150px; background: #f8f9fa; display: inline-block;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Net Banking -->
+                    <div class="payment-method-card" onclick="selectPaymentMethod('netbanking')" id="netbankingMethod">
+                        <div class="d-flex align-items-center">
+                            <div class="payment-method-icon">
+                                <i class="fas fa-university"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Net Banking</h6>
+                                <p class="text-muted small mb-0">Pay directly from your bank account</p>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" value="NET_BANKING">
+                            </div>
+                        </div>
+                        
+                        <!-- Net Banking Details -->
+                        <div class="payment-details" id="netbankingDetails" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Select Bank</label>
+                                <select class="form-select" name="bank_name">
+                                    <option value="">Choose your bank</option>
+                                    <option value="HDFC">HDFC Bank</option>
+                                    <option value="ICICI">ICICI Bank</option>
+                                    <option value="SBI">State Bank of India</option>
+                                    <option value="AXIS">Axis Bank</option>
+                                    <option value="KOTAK">Kotak Mahindra Bank</option>
+                                    <option value="YES">Yes Bank</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wallet -->
+                    {% if wallet_balance %}
+                    <div class="payment-method-card" onclick="selectPaymentMethod('wallet')" id="walletMethod">
+                        <div class="d-flex align-items-center">
+                            <div class="payment-method-icon">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Wallet Balance</h6>
+                                <p class="text-muted small mb-0">Use your Travel Booking System wallet</p>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" value="WALLET">
+                            </div>
+                        </div>
+                        
+                        <!-- Wallet Details -->
+                        <div class="payment-details" id="walletDetails" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Your wallet balance: <strong>${{ wallet_balance|intcomma }}</strong>
+                            </div>
+                            {% if wallet_balance >= pending_booking.amount|floatformat:2 %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                Sufficient balance available
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Insufficient balance. You need additional ${{ pending_booking.amount|add:"-wallet_balance"|floatformat:2 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Right Column: Order Summary -->
+                <div class="col-lg-5">
+                    <div class="payment-info sticky-top" style="top: 20px;">
+                        <h5 class="mb-3"><i class="fas fa-receipt text-primary"></i> Order Summary</h5>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Booking Amount</span>
+                                <span>${{ pending_booking.amount|intcomma }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Tax & Fees</span>
+                                <span>$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span>Discount</span>
+                                <span class="text-danger">-$0.00</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between mb-3">
+                                <strong>Total Amount</strong>
+                                <strong>${{ pending_booking.amount|intcomma }}</strong>
+                            </div>
+                        </div>
+
+                        <!-- Payment Button -->
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="payButton">
+                            <i class="fas fa-lock"></i> Pay ${{ pending_booking.amount|intcomma }}
+                        </button>
+                        
+                        <!-- Secure Payment Badge -->
+                        <div class="secure-payment">
+                            <i class="fas fa-shield-alt"></i>
+                            <small>Secure payment • 256-bit SSL encryption</small>
+                        </div>
+
+                        <!-- Payment Policies -->
+                        <div class="mt-4">
+                            <p class="small text-muted">
+                                <i class="fas fa-lock text-success"></i>
+                                Your payment is secure and encrypted
+                            </p>
+                            <p class="small text-muted">
+                                <i class="fas fa-sync-alt text-info"></i>
+                                Full refund available as per cancellation policy
+                            </p>
+                            <p class="small text-muted">
+                                <i class="fas fa-headset text-primary"></i>
+                                24/7 customer support available
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden Fields -->
+            <input type="hidden" name="booking" value="{{ pending_booking.booking_id }}">
+            <input type="hidden" name="amount" value="{{ pending_booking.amount }}">
+            <input type="hidden" name="payment_gateway" value="SYSTEM">
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+    let selectedMethod = null;
+
+    function selectPaymentMethod(method) {
+        // Update radio button
+        document.querySelector(`input[value="${method === 'card' ? 'CREDIT_CARD' : method === 'upi' ? 'UPI' : method === 'netbanking' ? 'NET_BANKING' : 'WALLET'}"]`).checked = true;
+        
+        // Remove selected class from all methods
+        document.querySelectorAll('.payment-method-card').forEach(card => {
+            card.classList.remove('selected');
+            const details = card.querySelector('.payment-details');
+            if (details) details.style.display = 'none';
+        });
+
+        // Add selected class to chosen method
+        const selectedCard = document.getElementById(`${method}Method`);
+        if (selectedCard) {
+            selectedCard.classList.add('selected');
+            const details = selectedCard.querySelector('.payment-details');
+            if (details) details.style.display = 'block';
+        }
+
+        selectedMethod = method;
+    }
+
+    // Initialize input masks
+    document.addEventListener('DOMContentLoaded', function() {
+        // Card number mask
+        $('[data-mask]').each(function() {
+            $(this).mask($(this).data('mask'));
+        });
+
+        // Auto-select first payment method
+        selectPaymentMethod('card');
+    });
+
+    // Form validation
+    document.getElementById('paymentForm').addEventListener('submit', function(e) {
+        const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+        if (!paymentMethod) {
+            e.preventDefault();
+            alert('Please select a payment method');
+            return;
+        }
+
+        // Validate card details if card selected
+        if (paymentMethod.value === 'CREDIT_CARD') {
+            const cardNumber = document.querySelector('input[name="card_number"]').value.replace(/\s/g, '');
+            const expiryDate = document.querySelector('input[name="expiry_date"]').value;
+            const cvv = document.querySelector('input[name="cvv"]').value;
+            const cardholder = document.querySelector('input[name="cardholder_name"]').value;
+
+            if (!cardNumber || cardNumber.length < 16) {
+                e.preventDefault();
+                alert('Please enter a valid card number');
+                return;
+            }
+
+            if (!expiryDate || !/^\d{2}\/\d{2}$/.test(expiryDate)) {
+                e.preventDefault();
+                alert('Please enter a valid expiry date (MM/YY)');
+                return;
+            }
+
+            if (!cvv || cvv.length < 3) {
+                e.preventDefault();
+                alert('Please enter a valid CVV');
+                return;
+            }
+
+            if (!cardholder) {
+                e.preventDefault();
+                alert('Please enter cardholder name');
+                return;
+            }
+        }
+
+        // Validate UPI ID if UPI selected
+        if (paymentMethod.value === 'UPI') {
+            const upiId = document.querySelector('input[name="upi_id"]').value;
+            if (!upiId || !upiId.includes('@')) {
+                e.preventDefault();
+                alert('Please enter a valid UPI ID (e.g., yourname@upi)');
+                return;
+            }
+        }
+
+        // Show loading on button
+        const payButton = document.getElementById('payButton');
+        payButton.disabled = true;
+        payButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    });
+</script>
+{% endblock %}

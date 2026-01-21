@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - TravelBook{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section bg-primary text-white py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-3">Book Your Perfect Getaway</h1>
+                <p class="lead mb-4">Find and book hotels, cars, buses, and trains all in one place.</p>
+                <a href="#services" class="btn btn-light btn-lg">Explore Services</a>
+            </div>
+            <div class="col-lg-6">
+                <img src="{% static 'images/travel-hero.png' %}" alt="Travel" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Services Section -->
+<div id="services" class="container">
+    <h2 class="text-center mb-5">Our Services</h2>
+    
+    <div class="row g-4">
+        <!-- Hotel Card -->
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-hotel fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Hotels</h5>
+                    <p class="card-text">Book hotels worldwide with best prices and amenities.</p>
+                    <a href="{% url 'hotels:hotel_list' %}" class="btn btn-outline-primary">Book Now</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Car Card -->
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-car fa-3x text-success"></i>
+                    </div>
+                    <h5 class="card-title">Car Rental</h5>
+                    <p class="card-text">Rent cars for your journey with flexible options.</p>
+                    <a href="{% url 'cars:car_list' %}" class="btn btn-outline-success">Book Now</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bus Card -->
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-bus fa-3x text-danger"></i>
+                    </div>
+                    <h5 class="card-title">Bus Tickets</h5>
+                    <p class="card-text">Book bus tickets with seat selection and routes.</p>
+                    <a href="{% url 'buses:bus_search' %}" class="btn btn-outline-danger">Book Now</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Train Card -->
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-train fa-3x text-warning"></i>
+                    </div>
+                    <h5 class="card-title">Train Tickets</h5>
+                    <p class="card-text">Book train tickets with multiple coach options.</p>
+                    <a href="{% url 'trains:train_search' %}" class="btn btn-outline-warning">Book Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Search Section -->
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h4 class="card-title text-center mb-4">Quick Search</h4>
+                    
+                    <ul class="nav nav-tabs" id="searchTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="hotel-tab" data-bs-toggle="tab" data-bs-target="#hotel-search">
+                                <i class="fas fa-hotel"></i> Hotel
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="car-tab" data-bs-toggle="tab" data-bs-target="#car-search">
+                                <i class="fas fa-car"></i> Car
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="bus-tab" data-bs-toggle="tab" data-bs-target="#bus-search">
+                                <i class="fas fa-bus"></i> Bus
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="train-tab" data-bs-toggle="tab" data-bs-target="#train-search">
+                                <i class="fas fa-train"></i> Train
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content p-3" id="searchTabContent">
+                        <!-- Hotel Search -->
+                        <div class="tab-pane fade show active" id="hotel-search">
+                            <form method="GET" action="{% url 'hotels:hotel_search' %}">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control" name="city" placeholder="City">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="date" class="form-control" name="check_in">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="date" class="form-control" name="check_out">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            Search Hotels
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Car Search -->
+                        <div class="tab-pane fade" id="car-search">
+                            <form method="GET" action="{% url 'cars:car_search' %}">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control" name="city" placeholder="City">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="date" class="form-control" name="pickup_date">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="date" class="form-control" name="dropoff_date">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            Search Cars
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Bus Search -->
+                        <div class="tab-pane fade" id="bus-search">
+                            <form method="GET" action="{% url 'buses:bus_search' %}">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" name="from" placeholder="From">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" name="to" placeholder="To">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="date" class="form-control" name="travel_date">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <button type="submit" class="btn btn-danger w-100">
+                                            Search Buses
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Train Search -->
+                        <div class="tab-pane fade" id="train-search">
+                            <form method="GET" action="{% url 'trains:train_search' %}">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" name="from" placeholder="From Station">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" name="to" placeholder="To Station">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="date" class="form-control" name="travel_date">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <button type="submit" class="btn btn-warning w-100">
+                                            Search Trains
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="container mt-5">
+    <div class="row text-center">
+        <div class="col-md-3">
+            <h2 class="text-primary">10,000+</h2>
+            <p>Hotels Worldwide</p>
+        </div>
+        <div class="col-md-3">
+            <h2 class="text-success">5,000+</h2>
+            <p>Cars Available</p>
+        </div>
+        <div class="col-md-3">
+            <h2 class="text-danger">20,000+</h2>
+            <p>Bus Routes</p>
+        </div>
+        <div class="col-md-3">
+            <h2 class="text-warning">15,000+</h2>
+            <p>Train Routes</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

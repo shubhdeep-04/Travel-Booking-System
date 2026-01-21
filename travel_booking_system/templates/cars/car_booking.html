@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Book {{ car.brand.name }} {{ car.model }} - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Progress Steps -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="progress-steps">
+                <div class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Car Selection</div>
+                </div>
+                <div class="step {% if form.errors %}active{% endif %}">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Rental Details</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Payment</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Confirmation</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Booking Form -->
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Rental Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Hidden Car ID -->
+                        <input type="hidden" name="car_id" value="{{ car.id }}">
+
+                        <!-- Pick-up & Drop-off Details -->
+                        <h5 class="mb-3">Pick-up & Drop-off</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.pickup_location.id_for_label }}" class="form-label">
+                                    Pick-up Location *
+                                </label>
+                                <input type="text" class="form-control {% if form.pickup_location.errors %}is-invalid{% endif %}"
+                                       id="{{ form.pickup_location.id_for_label }}" 
+                                       name="{{ form.pickup_location.name }}"
+                                       value="{{ form.pickup_location.value|default:car.pickup_location }}"
+                                       required readonly>
+                                {% if form.pickup_location.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.pickup_location.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.dropoff_location.id_for_label }}" class="form-label">
+                                    Drop-off Location *
+                                </label>
+                                <input type="text" class="form-control {% if form.dropoff_location.errors %}is-invalid{% endif %}"
+                                       id="{{ form.dropoff_location.id_for_label }}"
+                                       name="{{ form.dropoff_location.name }}"
+                                       value="{{ form.dropoff_location.value|default:car.pickup_location }}"
+                                       required>
+                                {% if form.dropoff_location.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.dropoff_location.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.pickup_date.id_for_label }}" class="form-label">
+                                    Pick-up Date *
+                                </label>
+                                <input type="date" class="form-control {% if form.pickup_date.errors %}is-invalid{% endif %}"
+                                       id="{{ form.pickup_date.id_for_label }}"
+                                       name="{{ form.pickup_date.name }}"
+                                       value="{{ form.pickup_date.value|default:'' }}"
+                                       required>
+                                {% if form.pickup_date.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.pickup_date.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.pickup_time.id_for_label }}" class="form-label">
+                                    Pick-up Time *
+                                </label>
+                                <select class="form-select {% if form.pickup_time.errors %}is-invalid{% endif %}"
+                                        id="{{ form.pickup_time.id_for_label }}"
+                                        name="{{ form.pickup_time.name }}" required>
+                                    <option value="">Select Time</option>
+                                    {% for hour in "678910111213141516171819202122"|make_list %}
+                                    <option value="{{ hour|add:0 }}:00" {% if form.pickup_time.value == hour|add:"0"|stringformat:"s"|add:":00" %}selected{% endif %}>
+                                        {{ hour|add:0 }}:00
+                                    </option>
+                                    <option value="{{ hour|add:0 }}:30" {% if form.pickup_time.value == hour|add:"0"|stringformat:"s"|add:":30" %}selected{% endif %}>
+                                        {{ hour|add:0 }}:30
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.pickup_time.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.pickup_time.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.dropoff_date.id_for_label }}" class="form-label">
+                                    Drop-off Date *
+                                </label>
+                                <input type="date" class="form-control {% if form.dropoff_date.errors %}is-invalid{% endif %}"
+                                       id="{{ form.dropoff_date.id_for_label }}"
+                                       name="{{ form.dropoff_date.name }}"
+                                       value="{{ form.dropoff_date.value|default:'' }}"
+                                       required>
+                                {% if form.dropoff_date.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.dropoff_date.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.dropoff_time.id_for_label }}" class="form-label">
+                                    Drop-off Time *
+                                </label>
+                                <select class="form-select {% if form.dropoff_time.errors %}is-invalid{% endif %}"
+                                        id="{{ form.dropoff_time.id_for_label }}"
+                                        name="{{ form.dropoff_time.name }}" required>
+                                    <option value="">Select Time</option>
+                                    {% for hour in "678910111213141516171819202122"|make_list %}
+                                    <option value="{{ hour|add:0 }}:00" {% if form.dropoff_time.value == hour|add:"0"|stringformat:"s"|add:":00" %}selected{% endif %}>
+                                        {{ hour|add:0 }}:00
+                                    </option>
+                                    <option value="{{ hour|add:0 }}:30" {% if form.dropoff_time.value == hour|add:"0"|stringformat:"s"|add:":30" %}selected{% endif %}>
+                                        {{ hour|add:0 }}:30
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.dropoff_time.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.dropoff_time.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Driver Information -->
+                        <h5 class="mb-3">Driver Information</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.driver_name.id_for_label }}" class="form-label">
+                                    Driver's Full Name *
+                                </label>
+                                <input type="text" class="form-control {% if form.driver_name.errors %}is-invalid{% endif %}"
+                                       id="{{ form.driver_name.id_for_label }}" 
+                                       name="{{ form.driver_name.name }}"
+                                       value="{{ form.driver_name.value|default:user.get_full_name|default:'' }}"
+                                       required>
+                                {% if form.driver_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.driver_name.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.driver_license.id_for_label }}" class="form-label">
+                                    Driver's License Number *
+                                </label>
+                                <input type="text" class="form-control {% if form.driver_license.errors %}is-invalid{% endif %}"
+                                       id="{{ form.driver_license.id_for_label }}"
+                                       name="{{ form.driver_license.name }}"
+                                       value="{{ form.driver_license.value|default:'' }}"
+                                       required>
+                                {% if form.driver_license.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.driver_license.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">Proceed to Payment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Right Column - Car Summary -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Car Summary</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ car.image.url }}" alt="{{ car.brand.name }} {{ car.model }}" class="img-fluid mb-3" style="max-height: 150px;">
+                    <h5>{{ car.brand.name }} {{ car.model }}</h5>
+                    <p class="mb-1"><strong>Type:</strong> {{ car.car_type }}</p>
+                    <p class="mb-1"><strong>Seats:</strong> {{ car.seating_capacity }}</p>
+                    <p class="mb-1"><strong>Transmission:</strong> {{ car.transmission_type }}</p>
+                    <p class="mb-1"><strong>Price per Day:</strong> ${{ car.price_per_day }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

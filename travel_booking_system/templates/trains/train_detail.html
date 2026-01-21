@@ -1,0 +1,652 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ train.train_number }} - {{ train.train_name }} - Travel Booking System{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trains:train_search' %}">Trains</a></li>
+            <li class="breadcrumb-item active">{{ train.train_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Left Column - Train Details -->
+        <div class="col-lg-8">
+            <!-- Train Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ train.train_number }} - {{ train.train_name }}</h4>
+                        <span class="badge bg-warning">{{ train.get_train_type_display }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="train-icon-large text-center">
+                                <i class="fas fa-train fa-4x text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="info-box mb-3">
+                                        <div class="info-label">Source</div>
+                                        <div class="info-value">{{ train.source_station }}</div>
+                                        <small class="text-muted">{{ train.source_station_code }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-box mb-3">
+                                        <div class="info-label">Destination</div>
+                                        <div class="info-value">{{ train.destination_station }}</div>
+                                        <small class="text-muted">{{ train.destination_station_code }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="train-schedule mb-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-center">
+                                        <div class="time-display">{{ train.departure_time|time:"h:i A" }}</div>
+                                        <div class="station-name">{{ train.source_station_code }}</div>
+                                        <small class="text-muted">Departure</small>
+                                    </div>
+                                    <div class="flex-grow-1 mx-3">
+                                        <div class="timeline">
+                                            <div class="timeline-line"></div>
+                                            <div class="timeline-duration text-center">
+                                                <i class="fas fa-clock text-danger me-1"></i>
+                                                {% if train.duration_hours %}
+                                                {{ train.duration_hours }} hours
+                                                {% endif %}
+                                                {% if train.distance_km %}
+                                                | {{ train.distance_km }} km
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="time-display">{{ train.arrival_time|time:"h:i A" }}</div>
+                                        <div class="station-name">{{ train.destination_station_code }}</div>
+                                        <small class="text-muted">Arrival</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="train-features">
+                                <h6 class="mb-3">Train Features</h6>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <div class="feature-item text-center p-2">
+                                            <i class="fas {% if train.has_ac %}fa-check-circle text-success{% else %}fa-times-circle text-muted{% endif %} fa-2x mb-2"></i>
+                                            <div class="feature-label">AC Coaches</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="feature-item text-center p-2">
+                                            <i class="fas {% if train.has_pantry %}fa-check-circle text-success{% else %}fa-times-circle text-muted{% endif %} fa-2x mb-2"></i>
+                                            <div class="feature-label">Pantry Car</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="feature-item text-center p-2">
+                                            <i class="fas fa-tachometer-alt fa-2x text-primary mb-2"></i>
+                                            <div class="feature-label">
+                                                {% if train.avg_speed_kmph %}
+                                                {{ train.avg_speed_kmph }} kmph
+                                                {% else %}
+                                                --
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Train Schedule -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list-ol me-2"></i>Train Schedule</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-danger">
+                                <tr>
+                                    <th>Station</th>
+                                    <th>Code</th>
+                                    <th>Arrival</th>
+                                    <th>Departure</th>
+                                    <th>Halt</th>
+                                    <th>Distance</th>
+                                    <th>Day</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stop in stops %}
+                                <tr {% if stop.is_source %}class="table-success{% elif stop.is_destination %}"class="table-warning{% endif %}">
+                                    <td>
+                                        {% if stop.is_source %}
+                                        <i class="fas fa-play text-success me-1"></i>
+                                        {% elif stop.is_destination %}
+                                        <i class="fas fa-flag-checkered text-warning me-1"></i>
+                                        {% else %}
+                                        <i class="fas fa-circle text-muted me-1" style="font-size: 0.5rem;"></i>
+                                        {% endif %}
+                                        {{ stop.station_name }}
+                                    </td>
+                                    <td><code>{{ stop.station_code }}</code></td>
+                                    <td>
+                                        {% if stop.arrival_time %}
+                                        {{ stop.arrival_time|time:"h:i A" }}
+                                        {% else %}
+                                        <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if stop.departure_time %}
+                                        {{ stop.departure_time|time:"h:i A" }}
+                                        {% else %}
+                                        <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ stop.halt_minutes }} min</td>
+                                    <td>{{ stop.distance_from_source }} km</td>
+                                    <td>Day {{ stop.day_number }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-3">
+                                        No schedule information available.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coach Types Available -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chair me-2"></i>Available Coach Classes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for coach_type in coach_types %}
+                        <div class="col-md-4 mb-3">
+                            <div class="coach-type-card p-3 border rounded">
+                                <h6 class="mb-2">{{ coach_type.name }}</h6>
+                                <div class="coach-features mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-users me-1"></i>
+                                        {{ coach_type.total_seats }} seats per coach
+                                    </small>
+                                </div>
+                                <div class="coach-price mb-3">
+                                    <span class="h5 text-danger">${{ coach_type.base_fare_per_km|floatformat:2 }}</span>
+                                    <small class="text-muted d-block">per km</small>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm w-100" 
+                                        onclick="selectCoachType('{{ coach_type.id }}', '{{ coach_type.name }}')">
+                                    Select Class
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <p class="text-muted text-center">No coach classes available.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-star me-2"></i>Reviews</h5>
+                        <div>
+                            <span class="badge bg-warning">★ {{ avg_rating|default:"0.0" }}</span>
+                            <small class="text-muted ms-2">Based on {{ reviews.count }} reviews</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reviews %}
+                    {% for review in reviews %}
+                    <div class="review-item mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <strong>{{ review.user.username }}</strong>
+                                <div class="star-rating small">
+                                    {% for i in "12345"|make_list %}
+                                    <i class="fas fa-star {% if forloop.counter <= review.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <h6 class="mb-2">{{ review.title }}</h6>
+                        <p class="mb-0">{{ review.comment|truncatechars:200 }}</p>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if reviews.has_other_pages %}
+                    <nav aria-label="Review pages">
+                        <ul class="pagination pagination-sm justify-content-center">
+                            {% if reviews.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reviews.previous_page_number }}#reviews">Previous</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for i in reviews.paginator.page_range|slice:":3" %}
+                            <li class="page-item {% if reviews.number == i %}active{% endif %}">
+                                <a class="page-link" href="?page={{ i }}#reviews">{{ i }}</a>
+                            </li>
+                            {% endfor %}
+                            
+                            {% if reviews.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reviews.next_page_number }}#reviews">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted">No reviews yet. Be the first to review!</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.is_authenticated %}
+                    <div class="add-review mt-4">
+                        <h6>Add Your Review</h6>
+                        <form method="post" action="{% url 'trains:submit_review' train.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="id_rating" class="form-label">Rating</label>
+                                <div class="star-select">
+                                    {% for i in "12345"|make_list %}
+                                    <i class="fas fa-star star-selector" data-rating="{{ forloop.counter }}"></i>
+                                    {% endfor %}
+                                    <input type="hidden" name="rating" id="id_rating" value="5">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_title" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="id_title" name="title" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_comment" class="form-label">Comment</label>
+                                <textarea class="form-control" id="id_comment" name="comment" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger">Submit Review</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Please <a href="{% url 'login' %}?next={{ request.path }}">login</a> to submit a review.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Booking Box -->
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 20px;">
+                <!-- Booking Form -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Book Tickets</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if request.GET.from and request.GET.to %}
+                        <div class="journey-info mb-4">
+                            <h6>Your Journey</h6>
+                            <div class="d-flex justify-content-between mb-2">
+                                <small class="text-muted">From:</small>
+                                <strong>{{ request.GET.from }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <small class="text-muted">To:</small>
+                                <strong>{{ request.GET.to }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">Date:</small>
+                                <strong>{{ request.GET.travel_date }}</strong>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <form method="post" action="{% url 'trains:train_booking' train.id %}">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                <label for="id_coach_type" class="form-label">Coach Class *</label>
+                                <select class="form-select" id="id_coach_type" name="coach_type" required>
+                                    <option value="">Select Coach Class</option>
+                                    {% for coach_type in coach_types %}
+                                    <option value="{{ coach_type.id }}">{{ coach_type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_quota" class="form-label">Quota *</label>
+                                <select class="form-select" id="id_quota" name="quota" required>
+                                    <option value="GENERAL">General</option>
+                                    <option value="LADIES">Ladies</option>
+                                    <option value="SENIOR_CITIZEN">Senior Citizen</option>
+                                    <option value="TATKAL">Tatkal</option>
+                                    <option value="PREMIUM_TATKAL">Premium Tatkal</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_passengers" class="form-label">Number of Passengers *</label>
+                                <select class="form-select" id="id_passengers" name="passengers" required>
+                                    {% for i in "123456"|make_list %}
+                                    <option value="{{ forloop.counter }}">{{ forloop.counter }} Passenger{% if forloop.counter > 1 %}s{% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Please check availability before booking
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-ticket-alt me-2"></i>Check Availability & Book
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Fare Estimate -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Fare Estimate</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="fare-estimate">
+                            <div class="mb-3">
+                                <label class="form-label">Distance (approx)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="distanceInput" value="500" min="1" max="5000">
+                                    <span class="input-group-text">km</span>
+                                </div>
+                            </div>
+                            
+                            <div id="fareResult" class="text-center py-3">
+                                <p class="text-muted mb-1">Select coach class to see fare</p>
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline-danger w-100" onclick="calculateFare()">
+                                Calculate Fare
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Important Information -->
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-exclamation-circle text-warning me-2"></i>Important</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled small">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Check train running status before travel
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Arrive at station 30 minutes before departure
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Carry valid photo ID for verification
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Tatkal booking opens 1 day before journey
+                            </li>
+                            <li>
+                                <i class="fas fa-check text-success me-2"></i>
+                                Free cancellation upto 48 hours before departure
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.train-icon-large {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-box {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #dc3545;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.train-schedule {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.time-display {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.station-name {
+    font-size: 1rem;
+    color: #333;
+    margin: 5px 0;
+}
+
+.timeline {
+    position: relative;
+    height: 2px;
+    background: #dee2e6;
+}
+
+.timeline-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #198754;
+    width: 100%;
+}
+
+.timeline-duration {
+    position: absolute;
+    top: -25px;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 0 10px;
+    display: inline-block;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.feature-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.feature-item:hover {
+    background: #f8f9fa;
+}
+
+.coach-type-card {
+    background: white;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+}
+
+.coach-type-card:hover {
+    border-color: #dc3545;
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.coach-price {
+    color: #dc3545;
+}
+
+.star-rating {
+    color: #ffc107;
+}
+
+.fare-estimate #fareResult {
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px dashed #dee2e6;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+.table-success {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+}
+
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+@media (max-width: 768px) {
+    .train-schedule .d-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .timeline {
+        width: 2px;
+        height: 40px;
+        margin: 10px auto;
+    }
+    
+    .timeline-line {
+        width: 2px;
+        height: 100%;
+    }
+    
+    .timeline-duration {
+        top: 50%;
+        left: 20px;
+        transform: translateY(-50%);
+        white-space: nowrap;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Coach type selection
+    window.selectCoachType = function(coachTypeId, coachTypeName) {
+        document.getElementById('id_coach_type').value = coachTypeId;
+        alert(`Selected coach class: ${coachTypeName}`);
+    };
+    
+    // Fare calculation function
+    window.calculateFare = function() {
+        const coachTypeSelect = document.getElementById('id_coach_type');
+        const distanceInput = document.getElementById('distanceInput');
+        const fareResult = document.getElementById('fareResult');
+        
+        if (!coachTypeSelect.value) {
+            fareResult.innerHTML = '<p class="text-danger">Please select a coach class first</p>';
+            return;
+        }
+        
+        const distance = parseFloat(distanceInput.value);
+        if (isNaN(distance) || distance <= 0) {
+            fareResult.innerHTML = '<p class="text-danger">Please enter a valid distance</p>';
+            return;
+        }
+        
+        // Sample fare calculation (in production, this would be an API call)
+        const baseRate = 0.75; // $ per km
+        const reservationCharge = 20.00;
+        const serviceTax = 0.05; // 5%
+        
+        const baseFare = distance * baseRate;
+        const totalBeforeTax = baseFare + reservationCharge;
+        const taxAmount = totalBeforeTax * serviceTax;
+        const totalFare = totalBeforeTax + taxAmount;
+        
+        fareResult.innerHTML = `
+            <div class="fare-breakdown">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Base Fare:</span>
+                    <span>$${baseFare.toFixed(2)}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Reservation Charge:</span>
+                    <span>$${reservationCharge.toFixed(2)}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Service Tax (5%):</span>
+                    <span>$${taxAmount.toFixed(2)}</span>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between fw-bold">
+                    <span>Total Fare:</span>
+                    <span class="h5 text-danger">$${totalFare.toFixed(2)}</span>
+                </div>
+                <small class="text-muted">Approximate fare for ${distance} km</small>
+            </div>
+        `;
+    };
+    

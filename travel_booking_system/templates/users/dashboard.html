@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - TravelBook{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-3 col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    {% if user.profile_image %}
+                        <img src="{{ user.profile_image.url }}" alt="Profile" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-3x text-secondary"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <h5>{{ user.get_full_name|default:user.username }}</h5>
+                <p class="text-muted">{{ user.email }}</p>
+                
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'profile' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user me-2"></i>My Profile
+                    </a>
+                    <a href="#bookings" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-calendar-alt me-2"></i>My Bookings
+                    </a>
+                    <a href="#payments" class="list-group-item list-group-item-action">
+                        <i class="fas fa-credit-card me-2"></i>Payment History
+                    </a>
+                    <a href="#preferences" class="list-group-item list-group-item-action">
+                        <i class="fas fa-cog me-2"></i>Preferences
+                    </a>
+                    <a href="{% url 'logout' %}" class="list-group-item list-group-item-action text-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> Quick Stats</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="display-6 fw-bold text-primary">{{ total_bookings }}</div>
+                        <small class="text-muted">Total Bookings</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="display-6 fw-bold text-success">{{ upcoming_bookings }}</div>
+                        <small class="text-muted">Upcoming</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="display-6 fw-bold text-warning">{{ pending_bookings }}</div>
+                        <small class="text-muted">Pending</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="display-6 fw-bold text-info">{{ completed_bookings }}</div>
+                        <small class="text-muted">Completed</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-9 col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Recent Bookings</h5>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                        Filter
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="?status=all">All Bookings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="?status=upcoming">Upcoming</a></li>
+                        <li><a class="dropdown-item" href="?status=pending">Pending</a></li>
+                        <li><a class="dropdown-item" href="?status=completed">Completed</a></li>
+                        <li><a class="dropdown-item" href="?status=cancelled">Cancelled</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if recent_bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Service</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in recent_bookings %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">{{ booking.booking_reference }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-2">
+                                                {% if booking.service_type == 'HOTEL' %}
+                                                    <i class="fas fa-hotel text-primary"></i>
+                                                {% elif booking.service_type == 'CAR' %}
+                                                    <i class="fas fa-car text-success"></i>
+                                                {% elif booking.service_type == 'BUS' %}
+                                                    <i class="fas fa-bus text-warning"></i>
+                                                {% elif booking.service_type == 'TRAIN' %}
+                                                    <i class="fas fa-train text-info"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <strong>{{ booking.get_service_type_display }}</strong>
+                                                <div class="small text-muted">{{ booking.service_name|truncatechars:30 }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {{ booking.booking_date|date:"M d, Y" }}<br>
+                                        <small class="text-muted">{{ booking.booking_date|date:"h:i A" }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>${{ booking.total_amount }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if booking.status == 'CONFIRMED' %}success{% elif booking.status == 'PENDING' %}warning{% elif booking.status == 'COMPLETED' %}info{% else %}danger{% endif %}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'bookings:booking_detail' pk=booking.id %}" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if booking.status == 'PENDING' or booking.status == 'CONFIRMED' %}
+                                            <a href="{% url 'bookings:cancel_booking' booking_id=booking.id %}" 
+                                               class="btn btn-outline-danger"
+                                               onclick="return confirm('Are you sure you want to cancel this booking?')">
+                                                <i class="fas fa-times"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            <small class="text-muted">Showing {{ recent_bookings|length }} bookings</small>
+                        </div>
+                        <div>
+                            <a href="#" class="btn btn-primary">View All Bookings</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                        <h4>No Bookings Found</h4>
+                        <p class="text-muted mb-4">You haven't made any bookings yet.</p>
+                        <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-search me-2"></i>Explore Services
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="fas fa-bell me-2"></i>Upcoming Bookings</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if upcoming_bookings > 0 %}
+                            <div class="list-group list-group-flush">
+                                {% for booking in upcoming_bookings_list|slice:":3" %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ booking.service_name|truncatechars:20 }}</strong>
+                                            <div class="small text-muted">
+                                                {{ booking.check_in_date|date:"M d" }} - {{ booking.check_out_date|date:"M d" }}
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-success">Upcoming</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if upcoming_bookings > 3 %}
+                            <div class="text-center mt-3">
+                                <a href="#" class="btn btn-outline-success btn-sm">View All {{ upcoming_bookings }} Upcoming</a>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No upcoming bookings</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Booking Statistics</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="bookingChart" height="150"></canvas>
+                        <div class="row text-center mt-3">
+                            <div class="col-4">
+                                <div class="fw-bold text-primary">{{ hotel_bookings }}</div>
+                                <small class="text-muted">Hotels</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold text-success">{{ car_bookings }}</div>
+                                <small class="text-muted">Cars</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold text-warning">{{ transport_bookings }}</div>
+                                <small class="text-muted">Transport</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Booking Statistics Chart
+    const ctx = document.getElementById('bookingChart').getContext('2d');
+    const bookingChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Hotels', 'Cars', 'Buses', 'Trains'],
+            datasets: [{
+                data: [{{ hotel_bookings }}, {{ car_bookings }}, {{ bus_bookings }}, {{ train_bookings }}],
+                backgroundColor: [
+                    '#3498db',
+                    '#2ecc71',
+                    '#f39c12',
+                    '#9b59b6'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
